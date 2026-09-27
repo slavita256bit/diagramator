@@ -1,0 +1,15 @@
+[package]
+name = "diagram-core"
+description = "Diagram IR, Doxygen XML parsing and layout for Diagramator"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+roxmltree = "0.20"
+thiserror = "2"
+tempfile = "3"
+
+[dev-dependencies]
+serde_json = "1"

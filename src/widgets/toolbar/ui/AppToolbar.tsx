@@ -1,0 +1,35 @@
+import { AppBar, Box, IconButton, Toolbar, Tooltip, Typography } from "@mui/material";
+import DarkModeIcon from "@mui/icons-material/DarkMode";
+import LightModeIcon from "@mui/icons-material/LightMode";
+import { AnalyzeButtons } from "@/features/analyze-project";
+import { ToolStatusChips } from "@/features/tool-status";
+import { selectSource } from "@/entities/diagram";
+import { selectThemeMode, themeToggled } from "@/entities/settings";
+import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
+
+export function AppToolbar() {
+  const dispatch = useAppDispatch();
+  const source = useAppSelector(selectSource);
+  const mode = useAppSelector(selectThemeMode);
+  return (
+    <AppBar position="static" elevation={0}>
+      <Toolbar variant="dense" sx={{ gap: 2 }}>
+        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+          Diagramator
+        </Typography>
+        <AnalyzeButtons />
+        <Typography variant="body2" noWrap sx={{ opacity: 0.8, flex: 1, minWidth: 0 }} title={source ?? ""}>
+          {source}
+        </Typography>
+        <ToolStatusChips />
+        <Box>
+          <Tooltip title="Toggle theme">
+            <IconButton color="inherit" onClick={() => dispatch(themeToggled())}>
+              {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
+            </IconButton>
+          </Tooltip>
+        </Box>
+      </Toolbar>
+    </AppBar>
+  );
+}

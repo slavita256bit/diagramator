@@ -1,0 +1,10 @@
+node_modules/
+dist/
+target/
+*.log
+.DS_Store
+# downloaded/bundled sidecar binaries
+src-tauri/binaries/*
+!src-tauri/binaries/README.md
+src-tauri/gen/
+.idea
