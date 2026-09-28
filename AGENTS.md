@@ -15,7 +15,10 @@ pnpm dev                       # UI only in browser, sample data, no Rust
 pnpm build                     # typecheck + frontend build  ← run after TS changes
 cargo test -p diagram-core     # parser/IR tests (skip if doxygen missing)
 cargo run -p diagram-core --example analyze -- examples/java-library
+cargo run -p diagram-core --example typst -- [style.json] < ir.json > diagram.typ
 ```
+`cargo test` also renders every style preset with real `typst` into
+`target/typst-preview/<preset>.png` — look at them after exporter changes.
 Tools: `pnpm` (not npm), `rg` (not grep). Needs `doxygen` on PATH; `typst` for export tests.
 
 ## Layout
@@ -28,12 +31,17 @@ Tools: `pnpm` (not npm), `rg` (not grep). Needs `doxygen` on PATH; `typst` for e
 ## Contracts (don't break silently)
 - IR: `crates/diagram-core/src/ir.rs` ↔ `src/shared/types/diagram.ts` — change both.
 - Relation `source` is always the dependent side (child, whole, user).
-- Saved files (style profiles, `diagramator.json`) are versioned; new fields need
-  `#[serde(default)]`; old files must keep loading. See `docs/architecture.md`.
+- Style profile: `crates/diagram-core/src/style.rs` ↔ `src/shared/types/style.ts`.
+  Presets live once in `crates/diagram-core/presets/*.json` (imported by both sides).
+  Versioned (`styleVersion`); new fields need `#[serde(default)]` + a default in the
+  presets; old files must keep loading (tests in `style.rs`).
+- Editor ↔ Typst geometry must match: fixed row heights, box size from
+  `measureClass()` (`src/entities/diagram/lib/measure.ts`), same edge clipping and
+  relation notation in `FloatingEdge.tsx`/`toFlow.ts` and `typst.rs`. Change both sides.
 
 ## Conventions
 - Smallest change that works; reuse before adding; no new deps without reason.
 - Business logic in Rust core when it must match Typst output (layout, edge geometry).
 
 ## Docs index
-- `docs/architecture.md` — stack, IR, data flow, file formats.
+- `docs/architecture.md` — stack, IR, data flow, style profiles, Typst export.

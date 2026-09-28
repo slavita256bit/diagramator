@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Background,
   Controls,
@@ -16,13 +16,14 @@ import {
   classMoved,
   FloatingEdge,
   selectDiagram,
+  styleVars,
   toFlowEdges,
   toFlowNodes,
   UmlClassNode,
   UmlMarkers,
   type ClassFlowNode,
 } from "@/entities/diagram";
-import { selectThemeMode } from "@/entities/settings";
+import { selectStyle, selectThemeMode } from "@/entities/settings";
 import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
 
 const nodeTypes: NodeTypes = { umlClass: UmlClassNode };
@@ -32,17 +33,19 @@ export function DiagramCanvas() {
   const dispatch = useAppDispatch();
   const diagram = useAppSelector(selectDiagram);
   const mode = useAppSelector(selectThemeMode);
+  const style = useAppSelector(selectStyle);
+  const vars = useMemo(() => styleVars(style), [style]);
   const [nodes, setNodes, onNodesChange] = useNodesState<ClassFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
-  // Rebuild the flow only when a new diagram is loaded (drags are kept locally
-  // and mirrored into the store on drag stop).
+  // Rebuild the flow only when a new diagram is loaded or the style resizes boxes
+  // (drags are kept locally and mirrored into the store on drag stop).
   const diagramKey = diagram ? diagram.classes.map((c) => c.id).join("|") : "";
   useEffect(() => {
     if (!diagram) return;
     setNodes(toFlowNodes(diagram));
     setEdges(toFlowEdges(diagram));
-  }, [diagramKey, setNodes, setEdges]);
+  }, [diagramKey, style, setNodes, setEdges]);
 
   if (!diagram) {
     return (
@@ -60,8 +63,8 @@ export function DiagramCanvas() {
   }
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0 }}>
-      <UmlMarkers />
+    <Box sx={{ flex: 1, minHeight: 0 }} style={vars}>
+      <UmlMarkers size={style.arrowSize} />
       <ReactFlow
         key={diagramKey}
         nodes={nodes}

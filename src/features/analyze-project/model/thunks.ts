@@ -1,20 +1,26 @@
-import { loadFailed, loadStarted, loadSucceeded } from "@/entities/diagram";
+import { loadFailed, loadStarted, loadSucceeded, measureClass } from "@/entities/diagram";
 import { backend } from "@/shared/api";
 import type { AppThunk } from "@/shared/model/hooks";
-import type { Diagram } from "@/shared/types";
+import type { Diagram, StyleProfile } from "@/shared/types";
+
+/** Size boxes for the current style; Rust only estimates them for the initial layout. */
+function sized(diagram: Diagram, style: StyleProfile): Diagram {
+  for (const c of diagram.classes) Object.assign(c.position, measureClass(c, style));
+  return diagram;
+}
 
 function load(title: string, fetch: (dir: string) => Promise<Diagram>): AppThunk<Promise<void>> {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
     if (!backend.available) {
       dispatch(loadStarted("sample (browser mode)"));
-      dispatch(loadSucceeded(backend.sampleDiagram()));
+      dispatch(loadSucceeded(sized(backend.sampleDiagram(), getState().settings.style)));
       return;
     }
     const dir = await backend.pickDirectory(title);
     if (!dir) return;
     dispatch(loadStarted(dir));
     try {
-      dispatch(loadSucceeded(await fetch(dir)));
+      dispatch(loadSucceeded(sized(await fetch(dir), getState().settings.style)));
     } catch (e) {
       dispatch(loadFailed(String(e)));
     }

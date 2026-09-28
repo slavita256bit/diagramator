@@ -6,8 +6,11 @@
 pub mod doxygen;
 pub mod ir;
 pub mod layout;
+pub mod style;
+pub mod typst;
 
 pub use ir::{ClassKind, ClassNode, Diagram, Position, Relation, RelationType};
+pub use style::StyleProfile;
 
 use std::path::Path;
 

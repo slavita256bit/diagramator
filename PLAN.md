@@ -22,7 +22,7 @@ There is no CLAUDE.md and no saved memory yet; knowledge lives in README + bluep
   aggregation, enum, generics. Reuse/extend `crates/diagram-core/tests/fixtures/java`.
 - Needs `sudo dnf install doxygen` to run end to end.
 
-## 3. Style profiles (editable, import/export)
+## 3. Style profiles (editable, import/export) — DONE
 - `StyleProfile` JSON, one type in Rust (`ir.rs` sibling `style.rs`) + TS mirror:
   font (default **Times New Roman**; one-click switch to **GOST type A** / **Arial**,
   each with a fallback list), size, line height, padding, border width, colors, header bold/stereotype
@@ -38,7 +38,7 @@ There is no CLAUDE.md and no saved memory yet; knowledge lives in README + bluep
   commands; no new fs plugin).
 - The same profile drives the React node (CSS vars) and the Typst generator → visuals match.
 
-## 4. Typst export + test
+## 4. Typst export + test — DONE
 - `diagram-core/src/typst.rs`: `render(diagram, style) -> String`.
   - Generated file exposes `#let diagram(scale: 100%) = ...` so the user does
     `#import "diagram.typ": diagram` and places it in their main document.
@@ -50,7 +50,7 @@ There is no CLAUDE.md and no saved memory yet; knowledge lives in README + bluep
 - Test: `cargo test` renders fixtures and runs `typst compile` if `typst` is on PATH
   (skipped otherwise); snapshot the .typ text for one fixture.
 
-## 5. Editor ↔ Typst position match
+## 5. Editor ↔ Typst position match — DONE (sizes via `measureClass`; verified by screenshot)
 - Root issue: editor box size comes from DOM, Typst box size from the Rust estimate.
 - Fix: after React Flow measures nodes, write measured width/height back into the IR
   (`classMeasured`), and Typst uses those exact sizes; both sides use the same font from

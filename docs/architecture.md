@@ -21,8 +21,22 @@ source dir → `doxygen` (XML) → `doxygen::parse_xml_dir` → `layout::auto_la
 `kind`: class | struct | interface | enum | union (UML stereotypes).
 `type`: inheritance | realization | composition | aggregation | association | dependency.
 
+## Style profiles
+JSON profile (font list, sizes, paddings, colors, badge, edge/arrow sizes), lengths in
+editor px. Presets: `crates/diagram-core/presets/` (GOST = default, provisional until the
+standard's PDF is applied; Visual Studio; PlantUML). Font choices: Times New Roman
+(default), GOST type A, Arial — each a fallback list.
+Back-compat: `#[serde(default)]` everywhere, unknown fields ignored, `styleVersion` +
+`StyleProfile::migrate` for breaking changes. Files are read through Rust (`read_style`);
+the frontend's `normalizeStyle` only fills defaults for localStorage.
+
+## Typst export
+`diagram_core::typst::render(diagram, style)` emits a module with
+`#let diagram(scale: 100%)`; use `#import "diagram.typ": diagram`. 1 px = 0.75 pt.
+Boxes are `place()`d at IR coordinates with IR width/height; rows have fixed heights
+(`lineHeight`), so the frontend's `measureClass()` sizes fit both renderers.
+Edges: same border clipping and notation as the editor, heads drawn as polygons.
+
 ## Planned (see PLAN.md)
-- Typst export: absolute `place()` from IR coordinates, 1 px = 0.75 pt.
-- Style profile JSON (versioned, full style inline) shared by editor and Typst.
 - `diagramator.json` in the project folder: style + positions; `diagram.typ` regenerated on save.
 - Tool updater: download newer doxygen/typst releases into `<app data>/tools/`.

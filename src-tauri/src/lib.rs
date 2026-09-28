@@ -15,6 +15,9 @@ pub fn run() {
             commands::analyze_project,
             commands::load_doxygen_xml,
             commands::tool_status,
+            commands::read_style,
+            commands::write_style,
+            commands::export_typst,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Diagramator");

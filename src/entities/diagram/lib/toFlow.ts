@@ -1,4 +1,4 @@
-import { MarkerType, type Edge, type Node } from "@xyflow/react";
+import type { Edge, Node } from "@xyflow/react";
 import type { ClassNode, Diagram, Relation, RelationType } from "@/shared/types";
 import { UML_MARKER } from "../ui/UmlMarkers";
 
@@ -10,6 +10,7 @@ export function toFlowNodes(diagram: Diagram): ClassFlowNode[] {
     type: "umlClass",
     position: { x: cls.position.x, y: cls.position.y },
     width: cls.position.width,
+    height: cls.position.height,
     data: { cls },
   }));
 }
@@ -24,10 +25,10 @@ interface EdgeStyle {
 const EDGE_STYLES: Record<RelationType, EdgeStyle> = {
   inheritance: { dashed: false, markerEnd: UML_MARKER.hollowTriangle },
   realization: { dashed: true, markerEnd: UML_MARKER.hollowTriangle },
-  composition: { dashed: false, markerStart: UML_MARKER.filledDiamond, markerEnd: { type: MarkerType.Arrow } },
-  aggregation: { dashed: false, markerStart: UML_MARKER.hollowDiamond, markerEnd: { type: MarkerType.Arrow } },
-  association: { dashed: false, markerEnd: { type: MarkerType.Arrow } },
-  dependency: { dashed: true, markerEnd: { type: MarkerType.Arrow } },
+  composition: { dashed: false, markerStart: UML_MARKER.filledDiamond, markerEnd: UML_MARKER.openArrow },
+  aggregation: { dashed: false, markerStart: UML_MARKER.hollowDiamond, markerEnd: UML_MARKER.openArrow },
+  association: { dashed: false, markerEnd: UML_MARKER.openArrow },
+  dependency: { dashed: true, markerEnd: UML_MARKER.openArrow },
 };
 
 export function toFlowEdges(diagram: Diagram): Edge[] {
@@ -40,7 +41,7 @@ export function toFlowEdges(diagram: Diagram): Edge[] {
       type: "floating",
       markerStart: style.markerStart,
       markerEnd: style.markerEnd,
-      style: { strokeDasharray: style.dashed ? "6 4" : undefined, strokeWidth: 1.5 },
+      style: { strokeDasharray: style.dashed ? "6 4" : undefined },
       data: { relation: rel.type },
     };
   });

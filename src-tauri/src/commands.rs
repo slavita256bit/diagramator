@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use diagram_core::Diagram;
+use diagram_core::{Diagram, StyleProfile};
 use tauri::AppHandle;
 
 use crate::tools::{self, Tool, ToolStatus};
@@ -38,4 +38,22 @@ where
         .await
         .map_err(|e| e.to_string())?
         .map_err(|e| e.to_string())
+}
+
+/// Reads a style profile, filling defaults and migrating older versions.
+#[tauri::command]
+pub fn read_style(path: String) -> Result<StyleProfile, String> {
+    let json = std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+    StyleProfile::from_json(&json).map_err(|e| format!("{path}: {e}"))
+}
+
+#[tauri::command]
+pub fn write_style(path: String, style: StyleProfile) -> Result<(), String> {
+    let json = serde_json::to_string_pretty(&style).map_err(|e| e.to_string())?;
+    std::fs::write(&path, json + "\n").map_err(|e| format!("{path}: {e}"))
+}
+
+#[tauri::command]
+pub fn export_typst(path: String, diagram: Diagram, style: StyleProfile) -> Result<(), String> {
+    std::fs::write(&path, diagram_core::typst::render(&diagram, &style)).map_err(|e| format!("{path}: {e}"))
 }

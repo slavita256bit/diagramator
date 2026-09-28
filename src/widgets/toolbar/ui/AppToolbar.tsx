@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { AppBar, Box, IconButton, Toolbar, Tooltip, Typography } from "@mui/material";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
+import PaletteIcon from "@mui/icons-material/Palette";
+import { StyleDrawer } from "@/features/edit-style";
+import { ExportTypstButton } from "@/features/export-typst";
 import { AnalyzeButtons } from "@/features/analyze-project";
 import { ToolStatusChips } from "@/features/tool-status";
 import { selectSource } from "@/entities/diagram";
@@ -11,6 +15,7 @@ export function AppToolbar() {
   const dispatch = useAppDispatch();
   const source = useAppSelector(selectSource);
   const mode = useAppSelector(selectThemeMode);
+  const [styleOpen, setStyleOpen] = useState(false);
   return (
     <AppBar position="static" elevation={0}>
       <Toolbar variant="dense" sx={{ gap: 2 }}>
@@ -18,11 +23,17 @@ export function AppToolbar() {
           Diagramator
         </Typography>
         <AnalyzeButtons />
+        <ExportTypstButton />
         <Typography variant="body2" noWrap sx={{ opacity: 0.8, flex: 1, minWidth: 0 }} title={source ?? ""}>
           {source}
         </Typography>
         <ToolStatusChips />
         <Box>
+          <Tooltip title="Diagram style">
+            <IconButton color="inherit" onClick={() => setStyleOpen(true)}>
+              <PaletteIcon />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Toggle theme">
             <IconButton color="inherit" onClick={() => dispatch(themeToggled())}>
               {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
@@ -30,6 +41,7 @@ export function AppToolbar() {
           </Tooltip>
         </Box>
       </Toolbar>
+      <StyleDrawer open={styleOpen} onClose={() => setStyleOpen(false)} />
     </AppBar>
   );
 }

@@ -46,6 +46,13 @@ export const diagramSlice = createSlice({
         cls.position.y = action.payload.y;
       }
     },
+    /** New box sizes after a style change (see `measureClass`). */
+    classesResized(state, action: PayloadAction<Record<string, { width: number; height: number }>>) {
+      for (const cls of state.diagram?.classes ?? []) {
+        const size = action.payload[cls.id];
+        if (size) Object.assign(cls.position, size);
+      }
+    },
   },
   selectors: {
     selectDiagram: (s) => s.diagram,
@@ -55,6 +62,6 @@ export const diagramSlice = createSlice({
   },
 });
 
-export const { loadStarted, loadSucceeded, loadFailed, errorDismissed, classMoved } =
+export const { loadStarted, loadSucceeded, loadFailed, errorDismissed, classMoved, classesResized } =
   diagramSlice.actions;
 export const { selectDiagram, selectSource, selectStatus, selectError } = diagramSlice.selectors;
