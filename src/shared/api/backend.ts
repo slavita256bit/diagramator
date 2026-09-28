@@ -5,7 +5,7 @@ import { sampleDiagram } from "./sample";
 
 /** Typed wrappers around the Rust commands in `src-tauri/src/commands.rs`. */
 export const backend = {
-  /** True inside the Tauri shell; false when the UI runs in a plain browser (`npm run dev`). */
+  /** True inside the Tauri shell; false when the UI runs in a plain browser (`pnpm dev`). */
   available: isTauri(),
 
   analyzeProject(path: string): Promise<Diagram> {

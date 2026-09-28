@@ -2,13 +2,13 @@
 
 Desktop class-diagram generator for C++/Java: runs Doxygen over a source tree,
 converts its XML into a diagram IR and renders it as an interactive UML class
-diagram. (Typst/Visio export and tool updates are later phases — see `blueprint.md`.)
+diagram. (Typst/Visio export and tool updates are later phases — see `PLAN.md`.)
 
 Tauri v2 · Rust · React + TypeScript + Vite · MUI · Redux Toolkit · React Flow
 
 ## Prerequisites
 
-- Node.js 20+ and npm
+- Node.js 20+ and pnpm
 - Rust **1.90+** (`rustup update stable`) — required by Tauri 2.12
 - Tauri Linux deps (Fedora):
   `sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file libappindicator-gtk3-devel librsvg2-devel`
@@ -18,11 +18,11 @@ Tauri v2 · Rust · React + TypeScript + Vite · MUI · Redux Toolkit · React F
 ## Commands
 
 ```sh
-npm install
-npm run tauri dev          # desktop app with hot reload
-npm run tauri build        # release bundle
-npm run dev                # UI only, in the browser, with sample data (no Rust needed)
-npm run build              # typecheck + build frontend
+pnpm install
+pnpm tauri dev          # desktop app with hot reload
+pnpm tauri build        # release bundle
+pnpm dev                # UI only, in the browser, with sample data (no Rust needed)
+pnpm build              # typecheck + build frontend
 
 cargo test -p diagram-core                                   # parser/IR tests (runs real doxygen)
 cargo run -p diagram-core --example analyze -- <src-dir>    # print IR JSON for a folder
@@ -43,6 +43,6 @@ src/                   Frontend, Feature-Sliced Design:
 ```
 
 The IR (`crates/diagram-core/src/ir.rs` ↔ `src/shared/types/diagram.ts`) follows
-the blueprint, plus a `kind` field on classes (class/struct/interface/enum/union)
+`docs/architecture.md`, plus a `kind` field on classes (class/struct/interface/enum/union)
 used for UML stereotypes. Relation `source` is always the dependent side
 (child, whole, or user).
