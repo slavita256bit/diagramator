@@ -1,0 +1,25 @@
+{
+  "styleVersion": 1,
+  "name": "GOST",
+  "font": ["Times New Roman", "Liberation Serif", "serif"],
+  "fontSize": 13,
+  "nameFontSize": 14,
+  "stereotypeFontSize": 11,
+  "lineHeight": 18,
+  "paddingX": 8,
+  "paddingY": 4,
+  "borderWidth": 1,
+  "cornerRadius": 0,
+  "nameBold": true,
+  "kindBadge": false,
+  "colors": {
+    "text": "#000000",
+    "border": "#000000",
+    "fill": "#ffffff",
+    "headerFill": "#ffffff",
+    "edge": "#000000",
+    "badge": "#add1b2"
+  },
+  "edgeWidth": 1,
+  "arrowSize": 12
+}

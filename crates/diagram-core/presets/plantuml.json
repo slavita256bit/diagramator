@@ -1,0 +1,25 @@
+{
+  "styleVersion": 1,
+  "name": "PlantUML",
+  "font": ["Arial", "Liberation Sans", "sans-serif"],
+  "fontSize": 12,
+  "nameFontSize": 13,
+  "stereotypeFontSize": 11,
+  "lineHeight": 18,
+  "paddingX": 8,
+  "paddingY": 4,
+  "borderWidth": 1,
+  "cornerRadius": 3,
+  "nameBold": false,
+  "kindBadge": true,
+  "colors": {
+    "text": "#000000",
+    "border": "#a80036",
+    "fill": "#fefece",
+    "headerFill": "#fefece",
+    "edge": "#a80036",
+    "badge": "#add1b2"
+  },
+  "edgeWidth": 1,
+  "arrowSize": 12
+}

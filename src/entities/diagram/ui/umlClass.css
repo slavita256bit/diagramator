@@ -1,0 +1,66 @@
+/* Class box. All metrics come from CSS variables set by `styleVars()` (style profile),
+   rows have fixed heights so `measureClass()` and the Typst export match the editor. */
+.uml-class {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--uml-font);
+  letter-spacing: normal; /* MUI body sets 0.00938em; canvas measuring assumes none */
+  font-size: var(--uml-size);
+  color: var(--uml-text);
+  background: var(--uml-fill);
+  border: var(--uml-bw) solid var(--uml-border);
+  border-radius: var(--uml-radius);
+}
+.uml-class.selected {
+  box-shadow: 0 0 0 2px #1976d2;
+}
+.uml-head {
+  background: var(--uml-head-fill);
+  padding: var(--uml-py) 0;
+  text-align: center;
+}
+.uml-section {
+  padding: var(--uml-py) 0;
+  border-top: var(--uml-bw) solid var(--uml-border);
+}
+.uml-row {
+  height: var(--uml-lh);
+  line-height: var(--uml-lh);
+  padding: 0 var(--uml-px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.uml-stereotype {
+  font-size: var(--uml-stereo-size);
+}
+.uml-name {
+  font-size: var(--uml-name-size);
+  font-weight: var(--uml-name-weight);
+}
+.uml-badge {
+  display: var(--uml-badge-display);
+  width: calc(var(--uml-lh) * 0.8);
+  height: calc(var(--uml-lh) * 0.8);
+  margin-right: calc(var(--uml-name-size) * 0.3);
+  border-radius: 50%;
+  border: var(--uml-bw) solid var(--uml-border);
+  background: var(--uml-badge);
+  font-size: calc(var(--uml-size) * 0.8);
+  font-weight: bold;
+  line-height: calc(var(--uml-lh) * 0.8 - 2 * var(--uml-bw));
+  vertical-align: middle;
+  box-sizing: border-box;
+  text-align: center;
+}
+.uml-italic {
+  font-style: italic;
+}
+.uml-static {
+  text-decoration: underline;
+}
+.react-flow__edge-path {
+  stroke-width: var(--uml-ew);
+}

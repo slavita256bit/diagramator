@@ -1,0 +1,25 @@
+{
+  "styleVersion": 1,
+  "name": "Visual Studio",
+  "font": ["Arial", "Liberation Sans", "sans-serif"],
+  "fontSize": 12,
+  "nameFontSize": 13,
+  "stereotypeFontSize": 11,
+  "lineHeight": 18,
+  "paddingX": 8,
+  "paddingY": 4,
+  "borderWidth": 1,
+  "cornerRadius": 6,
+  "nameBold": true,
+  "kindBadge": false,
+  "colors": {
+    "text": "#1e1e1e",
+    "border": "#7a96c2",
+    "fill": "#f7f9fc",
+    "headerFill": "#d6e2f5",
+    "edge": "#4d6a99",
+    "badge": "#d6e2f5"
+  },
+  "edgeWidth": 1,
+  "arrowSize": 12
+}
