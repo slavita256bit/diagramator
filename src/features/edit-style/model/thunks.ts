@@ -1,5 +1,5 @@
 import { classesResized, measureClass } from "@/entities/diagram";
-import { saveStyle, styleSet } from "@/entities/settings";
+import { styleSet } from "@/entities/settings";
 import { backend } from "@/shared/api";
 import type { AppThunk } from "@/shared/model/hooks";
 import type { StyleProfile } from "@/shared/types";
@@ -9,7 +9,6 @@ export const applyStyle =
   (style: StyleProfile): AppThunk =>
   (dispatch, getState) => {
     dispatch(styleSet(style));
-    saveStyle(style);
     const classes = getState().diagram.diagram?.classes ?? [];
     dispatch(classesResized(Object.fromEntries(classes.map((c) => [c.id, measureClass(c, style)]))));
   };

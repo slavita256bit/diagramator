@@ -20,6 +20,7 @@
     "edge": "#4d6a99",
     "badge": "#d6e2f5"
   },
+  "orthogonalEdges": false,
   "edgeWidth": 1,
   "arrowSize": 12
 }

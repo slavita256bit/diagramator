@@ -2,19 +2,27 @@ import { useEffect } from "react";
 import { Alert, Box, Snackbar } from "@mui/material";
 import { AppToolbar } from "@/widgets/toolbar";
 import { DiagramCanvas } from "@/widgets/diagram-canvas";
-import { analyzeProject } from "@/features/analyze-project";
+import { analyzeProject, openProject } from "@/features/analyze-project";
 import { errorDismissed, selectError } from "@/entities/diagram";
+import { selectRecent } from "@/entities/settings";
 import { backend } from "@/shared/api";
 import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
+
+let startedUp = false;
 
 export function DiagramPage() {
   const dispatch = useAppDispatch();
   const error = useAppSelector(selectError);
 
-  // Outside Tauri there is no backend: show the sample diagram right away.
+  const latest = useAppSelector(selectRecent)[0]?.path;
+
+  // Once per app start: reopen the latest project; outside Tauri show the sample diagram.
   useEffect(() => {
+    if (startedUp) return; // StrictMode runs effects twice in dev
+    startedUp = true;
     if (!backend.available) dispatch(analyzeProject());
-  }, [dispatch]);
+    else if (latest) dispatch(openProject(latest));
+  }, [dispatch, latest]);
   return (
     <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
       <AppToolbar />

@@ -57,7 +57,9 @@ There is no CLAUDE.md and no saved memory yet; knowledge lives in README + bluep
   the style profile (bundle/ship the font or pick one both have).
 - Visual check: export, compile to PNG, compare to editor screenshot for the example projects.
 
-## 6. Project file + auto-generation on save
+## 6. Project file + auto-generation on save — DONE
+New classes (not in the file) get auto-layout positions and may overlap saved ones — place them
+next to the saved layout if that bites.
 - In the analyzed folder: `diagramator.json`
   `{ version, style: <full StyleProfile, inline>, output: "diagram.typ", positions: { classId: {x,y} } }`
   — full style inline so the folder is portable.
@@ -66,18 +68,35 @@ There is no CLAUDE.md and no saved memory yet; knowledge lives in README + bluep
 - Save (Ctrl+S + debounced after drag stop): write `diagramator.json` and regenerate
   `diagram.typ` next to it. Toggle "auto-generate on save" in settings (default on).
 
-## 7. Recent projects
+## 7. Recent projects + examples menu — DONE
+(Also done: edge routing around boxes + orthogonal edges switch, see docs/architecture.md.)
 - List of `{ path, name, openedAt }` persisted in `localStorage` (Tauri webview keeps it),
   max 10. Menu in toolbar with remove (×) per entry. On startup, reopen the latest one.
 - Lazier alternative: just "reopen last" without the list; list is cheap enough though.
 
-## 8. Performance ("feels laggy")
-Measure first (React Profiler + dragging on the java/cpp examples), then likely fixes:
-- `UmlClassNode`: replace per-member MUI `Typography`+`sx` (Emotion styles per line) with
-  plain elements + one CSS class — biggest suspect.
-- `onlyRenderVisibleElements` on `<ReactFlow>`; MiniMap off by default (toggle).
-- Keep node/edge type maps and handlers stable (`useCallback`), avoid re-render of
-  `DiagramCanvas` on store updates unrelated to the graph.
+## 8. Performance ("feels laggy") — browser fast, Tauri app slow
+Done so far:
+- Class node = plain DOM + CSS vars (no per-row MUI/Emotion).
+- `onlyRenderVisibleElements`, MiniMap off by default (toggle in Controls), stable drag handler.
+- Linux: `WEBKIT_DISABLE_DMABUF_RENDERER=1` was forced on every machine — it pushes WebKitGTK
+  to a slow, software-heavy rendering path. Now only on NVIDIA or with `DIAGRAMATOR_DISABLE_DMABUF=1`.
+Next if still slow: profile in WebKit inspector (right click → Inspect in `pnpm tauri dev`);
+suspects: edge re-renders on drag (FloatingEdge per frame), dotted Background, box-shadow.
+
+## 9. Releases, installers, bundled tools, updates
+- GitHub Actions on tag `v*`: `tauri-apps/tauri-action` matrix (windows-latest, ubuntu-22.04,
+  macos-latest arm64 + x86_64) → draft GitHub Release with installers:
+  Windows `.msi`/NSIS `.exe`, Linux `.AppImage`/`.deb`/`.rpm`, macOS `.dmg`.
+- Bundle `typst` and `doxygen` as Tauri sidecars (`bundle.externalBin`, per target triple
+  `binaries/<name>-<triple>`); CI script downloads pinned versions from their GitHub releases
+  (typst: typst/typst, doxygen: doxygen/doxygen) before `tauri build`. `tools.rs` already
+  looks for sidecars next to the executable.
+- Tool updates (already planned lookup order): check GitHub releases API for newer typst/doxygen,
+  download to `<app data>/tools/`, verify checksum, show in tool-status chips; one "Update" button.
+- App updates: `tauri-plugin-updater` + signed `latest.json` published by the same workflow
+  (needs `TAURI_SIGNING_PRIVATE_KEY` secret). macOS notarization/Windows signing: later, needs certs.
+- Licenses: doxygen is GPL-2.0 — shipped as a separate executable (not linked), include its license
+  text + source link in the bundle.
 
 ## Decided
 - Font: Times New Roman default; GOST type A / Arial switchable.

@@ -262,7 +262,9 @@ pub fn render(diagram: &Diagram, style: &StyleProfile) -> String {
         let dash = if dashed { "(4.5pt, 3pt)" } else { "none" };
         let src = &rects[si];
         // Polyline from source to target; heads are drawn at the first/last point.
-        let pts: Vec<P> = if si == ti {
+        let pts: Vec<P> = if rel.route.len() >= 2 {
+            rel.route.iter().map(|p| P { x: p.x, y: p.y }).collect()
+        } else if si == ti {
             let right = src.x + src.w;
             let start_y = src.y + 24f64.min(src.h / 3.0);
             let end_x = right - 40f64.min(src.w / 4.0);
@@ -341,10 +343,20 @@ mod tests {
                 class("c", "Точка", ClassKind::Struct, 300.0, 250.0),
             ],
             relations: vec![
-                Relation { source: "b".into(), target: "a".into(), kind: RelationType::Realization },
-                Relation { source: "b".into(), target: "c".into(), kind: RelationType::Composition },
-                Relation { source: "c".into(), target: "c".into(), kind: RelationType::Aggregation },
-                Relation { source: "c".into(), target: "a".into(), kind: RelationType::Dependency },
+                Relation { source: "b".into(), target: "a".into(), kind: RelationType::Realization, route: vec![] },
+                Relation { source: "b".into(), target: "c".into(), kind: RelationType::Composition, route: vec![] },
+                Relation { source: "c".into(), target: "c".into(), kind: RelationType::Aggregation, route: vec![] },
+                Relation {
+                    source: "c".into(),
+                    target: "a".into(),
+                    kind: RelationType::Dependency,
+                    // Orthogonal route as the editor's router would produce it.
+                    route: vec![
+                        crate::ir::Point { x: 400.0, y: 250.0 },
+                        crate::ir::Point { x: 400.0, y: 60.0 },
+                        crate::ir::Point { x: 200.0, y: 60.0 },
+                    ],
+                },
             ],
         }
     }

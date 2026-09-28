@@ -1,6 +1,7 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Background,
+  ControlButton,
   Controls,
   MiniMap,
   ReactFlow,
@@ -9,9 +10,11 @@ import {
   type Edge,
   type EdgeTypes,
   type NodeTypes,
+  type OnNodeDrag,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Box, Typography } from "@mui/material";
+import MapIcon from "@mui/icons-material/Map";
 import {
   classMoved,
   FloatingEdge,
@@ -35,6 +38,12 @@ export function DiagramCanvas() {
   const mode = useAppSelector(selectThemeMode);
   const style = useAppSelector(selectStyle);
   const vars = useMemo(() => styleVars(style), [style]);
+  // MiniMap re-renders on every drag frame; off by default (costly in WebKitGTK).
+  const [miniMap, setMiniMap] = useState(false);
+  const onNodeDragStop = useCallback<OnNodeDrag<ClassFlowNode>>(
+    (_, __, dragged) => dragged.forEach((n) => dispatch(classMoved({ id: n.id, x: n.position.x, y: n.position.y }))),
+    [dispatch],
+  );
   const [nodes, setNodes, onNodesChange] = useNodesState<ClassFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -44,8 +53,12 @@ export function DiagramCanvas() {
   useEffect(() => {
     if (!diagram) return;
     setNodes(toFlowNodes(diagram));
-    setEdges(toFlowEdges(diagram));
-  }, [diagramKey, style, setNodes, setEdges]);
+  }, [diagramKey, style, setNodes]);
+  // Edges follow the router's output (relations change only when routes are recomputed).
+  const relations = diagram?.relations;
+  useEffect(() => {
+    if (diagram) setEdges(toFlowEdges(diagram));
+  }, [relations, setEdges]);
 
   if (!diagram) {
     return (
@@ -73,9 +86,8 @@ export function DiagramCanvas() {
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
-        onNodeDragStop={(_, __, dragged) =>
-          dragged.forEach((n) => dispatch(classMoved({ id: n.id, x: n.position.x, y: n.position.y })))
-        }
+        onNodeDragStop={onNodeDragStop}
+        onlyRenderVisibleElements
         nodesConnectable={false}
         colorMode={mode}
         minZoom={0.05}
@@ -83,8 +95,12 @@ export function DiagramCanvas() {
         fitViewOptions={{ padding: 0.2 }}
       >
         <Background />
-        <Controls />
-        <MiniMap pannable zoomable />
+        <Controls>
+          <ControlButton title="Toggle minimap" onClick={() => setMiniMap((v) => !v)}>
+            <MapIcon />
+          </ControlButton>
+        </Controls>
+        {miniMap && <MiniMap pannable zoomable />}
       </ReactFlow>
     </Box>
   );

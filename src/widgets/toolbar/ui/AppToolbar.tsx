@@ -5,7 +5,8 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import PaletteIcon from "@mui/icons-material/Palette";
 import { StyleDrawer } from "@/features/edit-style";
 import { ExportTypstButton } from "@/features/export-typst";
-import { AnalyzeButtons } from "@/features/analyze-project";
+import { SaveButton } from "@/features/save-project";
+import { AnalyzeButtons, RecentMenu } from "@/features/analyze-project";
 import { ToolStatusChips } from "@/features/tool-status";
 import { selectSource } from "@/entities/diagram";
 import { selectThemeMode, themeToggled } from "@/entities/settings";
@@ -23,6 +24,8 @@ export function AppToolbar() {
           Diagramator
         </Typography>
         <AnalyzeButtons />
+        <RecentMenu />
+        <SaveButton />
         <ExportTypstButton />
         <Typography variant="body2" noWrap sx={{ opacity: 0.8, flex: 1, minWidth: 0 }} title={source ?? ""}>
           {source}

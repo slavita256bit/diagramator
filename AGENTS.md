@@ -13,6 +13,7 @@ pnpm install
 pnpm tauri dev                 # desktop app, hot reload
 pnpm dev                       # UI only in browser, sample data, no Rust
 pnpm build                     # typecheck + frontend build  ← run after TS changes
+pnpm test                      # TS unit tests (*.test.ts, node --test)
 cargo test -p diagram-core     # parser/IR tests (skip if doxygen missing)
 cargo run -p diagram-core --example analyze -- examples/java-library
 cargo run -p diagram-core --example typst -- [style.json] < ir.json > diagram.typ
@@ -37,7 +38,8 @@ Tools: `pnpm` (not npm), `rg` (not grep). Needs `doxygen` on PATH; `typst` for e
   presets; old files must keep loading (tests in `style.rs`).
 - Editor ↔ Typst geometry must match: fixed row heights, box size from
   `measureClass()` (`src/entities/diagram/lib/measure.ts`), same edge clipping and
-  relation notation in `FloatingEdge.tsx`/`toFlow.ts` and `typst.rs`. Change both sides.
+  relation notation in `toFlow.ts` and `typst.rs`. Edge geometry is computed once by the
+  TS router (`src/entities/diagram/lib/routing.ts`) into `Relation.route`; Typst only draws it.
 
 ## Conventions
 - Smallest change that works; reuse before adding; no new deps without reason.

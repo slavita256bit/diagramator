@@ -33,6 +33,8 @@ pub struct StyleProfile {
     /// PlantUML-style circled letter (C/I/E/S/U) before the class name.
     pub kind_badge: bool,
     pub colors: Colors,
+    /// Route edges with horizontal/vertical segments only.
+    pub orthogonal_edges: bool,
     pub edge_width: f64,
     pub arrow_size: f64,
 }
@@ -79,6 +81,7 @@ impl Default for StyleProfile {
             name_bold: true,
             kind_badge: false,
             colors: Colors::default(),
+            orthogonal_edges: false,
             edge_width: 1.0,
             arrow_size: 12.0,
         }

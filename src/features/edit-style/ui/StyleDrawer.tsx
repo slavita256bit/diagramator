@@ -112,6 +112,12 @@ export function StyleDrawer({ open, onClose }: { open: boolean; onClose: () => v
               control={<Switch checked={style.kindBadge} onChange={(e) => set({ kindBadge: e.target.checked })} />}
               label="Kind badge (C/I/E)"
             />
+            <FormControlLabel
+              control={
+                <Switch checked={style.orthogonalEdges} onChange={(e) => set({ orthogonalEdges: e.target.checked })} />
+              }
+              label="Orthogonal edges (90° only)"
+            />
           </Box>
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1 }}>
             {COLORS.map(([key, label]) => (

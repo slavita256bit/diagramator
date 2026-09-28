@@ -33,6 +33,13 @@ export interface Relation {
   source: string;
   target: string;
   type: RelationType;
+  /** Polyline source border → target border from the edge router; absent = straight line. */
+  route?: Point[];
+}
+
+export interface Point {
+  x: number;
+  y: number;
 }
 
 export interface Diagram {

@@ -44,13 +44,23 @@ pub struct Position {
     pub height: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Relation {
     pub source: String,
     pub target: String,
     #[serde(rename = "type")]
     pub kind: RelationType,
+    /// Edge polyline from source border to target border, computed by the editor's
+    /// router (`src/entities/diagram/lib/routing.ts`). Empty = straight line (exporter fallback).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub route: Vec<Point>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
 }
 
 /// `source` is always the dependent side: the child for inheritance,

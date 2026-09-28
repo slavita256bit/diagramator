@@ -6,11 +6,13 @@
 pub mod doxygen;
 pub mod ir;
 pub mod layout;
+pub mod project;
 pub mod style;
 pub mod typst;
 
-pub use ir::{ClassKind, ClassNode, Diagram, Position, Relation, RelationType};
+pub use ir::{ClassKind, ClassNode, Diagram, Point, Position, Relation, RelationType};
 pub use style::StyleProfile;
+pub use project::ProjectFile;
 
 use std::path::Path;
 

@@ -42,7 +42,7 @@ export function toFlowEdges(diagram: Diagram): Edge[] {
       markerStart: style.markerStart,
       markerEnd: style.markerEnd,
       style: { strokeDasharray: style.dashed ? "6 4" : undefined },
-      data: { relation: rel.type },
+      data: { relation: rel.type, route: rel.route },
     };
   });
 }

@@ -37,6 +37,27 @@ Boxes are `place()`d at IR coordinates with IR width/height; rows have fixed hei
 (`lineHeight`), so the frontend's `measureClass()` sizes fit both renderers.
 Edges: same border clipping and notation as the editor, heads drawn as polygons.
 
+## Project file
+`diagramator.json` in the analyzed source folder (`crates/diagram-core/src/project.rs`):
+`{ version, output: "diagram.typ", autoExport: true, style: <full profile>, positions: {id: {x, y}} }`.
+Opening a folder applies saved positions (by Doxygen refid) and the saved style.
+Saves: Ctrl+S, Save button, and autosave 800 ms after drags/style edits
+(`src/app/store/autosave.ts`). Each save rewrites the Typst `output` when `autoExport` is on.
+Positions of classes that disappeared from the sources are kept.
+
+## Edge routing
+`routing.ts` computes every edge's polyline so edges don't cross class boxes:
+straight mode = direct line if clear, else shortest path over box corners;
+orthogonal mode (style `orthogonalEdges`) = A* on a grid from box borders with bend,
+shared-segment and shared-start-port penalties. Runs in a store listener
+(`src/app/store/routing.ts`) after load, drop, resize and style changes; while dragging,
+edges of the dragged node show a live straight line. Routes are saved in the IR and
+exported to Typst as-is.
+
+## Recent projects & examples
+Recent list (max 10, removable) in localStorage via `src/app/store/persist.ts`; the latest
+reopens on start. `examples/` is bundled as a Tauri resource and copied to
+`<app data>/examples/` on first open (install dir is read-only).
+
 ## Planned (see PLAN.md)
-- `diagramator.json` in the project folder: style + positions; `diagram.typ` regenerated on save.
 - Tool updater: download newer doxygen/typst releases into `<app data>/tools/`.

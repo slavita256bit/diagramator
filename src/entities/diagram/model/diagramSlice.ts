@@ -1,7 +1,8 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Diagram } from "@/shared/types";
+import type { Diagram, Point } from "@/shared/types";
 
 export type LoadStatus = "idle" | "loading" | "succeeded" | "failed";
+export type SaveStatus = "saved" | "unsaved" | "saving" | "failed";
 
 export interface DiagramState {
   diagram: Diagram | null;
@@ -9,6 +10,9 @@ export interface DiagramState {
   source: string | null;
   status: LoadStatus;
   error: string | null;
+  /** Folder that receives `diagramator.json`; null for diagrams loaded from Doxygen XML. */
+  projectDir: string | null;
+  saveStatus: SaveStatus;
 }
 
 const initialState: DiagramState = {
@@ -16,6 +20,8 @@ const initialState: DiagramState = {
   source: null,
   status: "idle",
   error: null,
+  projectDir: null,
+  saveStatus: "saved",
 };
 
 export const diagramSlice = createSlice({
@@ -27,9 +33,20 @@ export const diagramSlice = createSlice({
       state.error = null;
       state.source = action.payload;
     },
-    loadSucceeded(state, action: PayloadAction<Diagram>) {
+    loadSucceeded(state, action: PayloadAction<{ diagram: Diagram; projectDir: string | null }>) {
       state.status = "succeeded";
-      state.diagram = action.payload;
+      state.diagram = action.payload.diagram;
+      state.projectDir = action.payload.projectDir;
+      state.saveStatus = "saved";
+    },
+    /** Edge routes, index-aligned with `relations` (see `computeRoutes`). */
+    routesUpdated(state, action: PayloadAction<Point[][]>) {
+      state.diagram?.relations.forEach((r, i) => {
+        r.route = action.payload[i];
+      });
+    },
+    saveStatusChanged(state, action: PayloadAction<SaveStatus>) {
+      state.saveStatus = action.payload;
     },
     loadFailed(state, action: PayloadAction<string>) {
       state.status = "failed";
@@ -44,6 +61,7 @@ export const diagramSlice = createSlice({
       if (cls) {
         cls.position.x = action.payload.x;
         cls.position.y = action.payload.y;
+        state.saveStatus = "unsaved";
       }
     },
     /** New box sizes after a style change (see `measureClass`). */
@@ -52,6 +70,7 @@ export const diagramSlice = createSlice({
         const size = action.payload[cls.id];
         if (size) Object.assign(cls.position, size);
       }
+      state.saveStatus = "unsaved";
     },
   },
   selectors: {
@@ -59,9 +78,11 @@ export const diagramSlice = createSlice({
     selectSource: (s) => s.source,
     selectStatus: (s) => s.status,
     selectError: (s) => s.error,
+    selectProjectDir: (s) => s.projectDir,
+    selectSaveStatus: (s) => s.saveStatus,
   },
 });
 
-export const { loadStarted, loadSucceeded, loadFailed, errorDismissed, classMoved, classesResized } =
+export const { loadStarted, loadSucceeded, loadFailed, errorDismissed, classMoved, classesResized, saveStatusChanged, routesUpdated } =
   diagramSlice.actions;
-export const { selectDiagram, selectSource, selectStatus, selectError } = diagramSlice.selectors;
+export const { selectDiagram, selectSource, selectStatus, selectError, selectProjectDir, selectSaveStatus } = diagramSlice.selectors;

@@ -254,6 +254,7 @@ fn build_diagram(compounds: Vec<Compound>) -> Diagram {
             source,
             target,
             kind,
+            route: Vec::new(),
         })
         .collect();
 

@@ -16,6 +16,8 @@ export interface StyleProfile {
   /** PlantUML-style circled kind letter before the class name. */
   kindBadge: boolean;
   colors: StyleColors;
+  /** Route edges with horizontal/vertical segments only. */
+  orthogonalEdges: boolean;
   edgeWidth: number;
   arrowSize: number;
 }
