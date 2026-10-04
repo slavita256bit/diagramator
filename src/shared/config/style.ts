@@ -4,15 +4,17 @@ import gost from "../../../crates/diagram-core/presets/gost.json";
 import visualStudio from "../../../crates/diagram-core/presets/visual-studio.json";
 import plantuml from "../../../crates/diagram-core/presets/plantuml.json";
 
-export const STYLE_VERSION = 1;
+export const STYLE_VERSION = 2;
 
+// JSON imports widen literal-union fields (e.g. "corner") to `string`; these are
+// trusted presets (round-tripped through Rust's `StyleProfile` and tested there).
 export const STYLE_PRESETS: Record<string, StyleProfile> = {
-  gost,
-  "visual-studio": visualStudio,
-  plantuml,
+  gost: gost as StyleProfile,
+  "visual-studio": visualStudio as StyleProfile,
+  plantuml: plantuml as StyleProfile,
 };
 
-export const DEFAULT_STYLE: StyleProfile = gost;
+export const DEFAULT_STYLE: StyleProfile = STYLE_PRESETS.gost;
 
 /** Font choices with fallbacks; same lists as `style::fonts` in Rust. */
 export const FONT_CHOICES: Record<string, string[]> = {

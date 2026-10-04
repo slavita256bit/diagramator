@@ -626,6 +626,7 @@ dependencies = [
 name = "diagram-core"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "roxmltree",
  "serde",
  "serde_json",

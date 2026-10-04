@@ -1,5 +1,5 @@
 {
-  "styleVersion": 1,
+  "styleVersion": 2,
   "name": "Visual Studio",
   "font": ["Arial", "Liberation Sans", "sans-serif"],
   "fontSize": 12,
@@ -22,5 +22,13 @@
   },
   "orthogonalEdges": false,
   "edgeWidth": 1,
-  "arrowSize": 12
+  "arrowSize": 12,
+  "edgeDashLength": 6,
+  "edgeDashGap": 4,
+  "interfaceHidesAttributes": false,
+  "showStereotype": true,
+  "templateNotation": "header",
+  "memberIconStyle": "shape",
+  "showMethodParams": true,
+  "showMethodReturnType": true
 }

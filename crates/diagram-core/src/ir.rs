@@ -8,6 +8,10 @@ use serde::{Deserialize, Serialize};
 pub struct Diagram {
     pub classes: Vec<ClassNode>,
     pub relations: Vec<Relation>,
+    /// Freestanding comment boxes (not derived from Doxygen); restored from
+    /// `diagramator.json` on open, same as class positions.
+    #[serde(default)]
+    pub notes: Vec<Note>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -22,6 +26,13 @@ pub struct ClassNode {
     pub attributes: Vec<String>,
     /// UML-formatted operations, e.g. `+ calculate(): void`.
     pub methods: Vec<String>,
+    /// Template/generic parameter names (e.g. `["T", "Alloc"]`); empty if not a template.
+    #[serde(default)]
+    pub template_params: Vec<String>,
+    #[serde(default)]
+    pub attributes_collapsed: bool,
+    #[serde(default)]
+    pub methods_collapsed: bool,
     pub position: Position,
 }
 
@@ -61,6 +72,22 @@ pub struct Relation {
 pub struct Point {
     pub x: f64,
     pub y: f64,
+}
+
+/// A freestanding comment box, optionally attached to one class with a dashed
+/// connector (GOST fig 4.5's `{comment}` box). Not derived from Doxygen.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Note {
+    pub id: String,
+    pub text: String,
+    pub position: Position,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub linked_class: Option<String>,
+    /// Attached image as a data URI (`data:image/png;base64,...`); embedded directly, no
+    /// separate asset file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub image: Option<String>,
 }
 
 /// `source` is always the dependent side: the child for inheritance,

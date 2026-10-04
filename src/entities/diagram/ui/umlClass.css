@@ -1,7 +1,13 @@
 /* Class box. All metrics come from CSS variables set by `styleVars()` (style profile),
    rows have fixed heights so `measureClass()` and the Typst export match the editor. */
+.uml-node-root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
 .uml-class {
   box-sizing: border-box;
+  position: relative;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -22,8 +28,57 @@
   text-align: center;
 }
 .uml-section {
+  position: relative;
   padding: var(--uml-py) 0;
   border-top: var(--uml-bw) solid var(--uml-border);
+}
+.uml-collapse-toggle {
+  position: absolute;
+  top: 0;
+  right: 2px;
+  z-index: 1;
+  padding: 0 3px;
+  border: none;
+  background: none;
+  color: var(--uml-border);
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.uml-collapse-toggle:hover {
+  opacity: 1;
+}
+.uml-icon {
+  display: inline-block;
+  width: calc(var(--uml-lh) * 0.5);
+  height: calc(var(--uml-lh) * 0.5);
+  margin-right: 0.3em;
+  vertical-align: middle;
+  flex: none;
+}
+.uml-icon-circle {
+  border-radius: 50%;
+}
+.uml-template-corner {
+  position: absolute;
+  top: -32px;
+  right: 0;
+  box-sizing: border-box;
+  min-width: 70px;
+  max-width: 160px;
+  padding: 2px 6px;
+  border: var(--uml-bw) dashed var(--uml-border);
+  background: var(--uml-fill);
+  font-size: var(--uml-stereo-size);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.uml-template-header {
+  font-style: italic;
+  font-size: var(--uml-stereo-size);
 }
 .uml-row {
   height: var(--uml-lh);

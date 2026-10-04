@@ -48,6 +48,11 @@ export const backend = {
     return invoke("export_typst", { path, diagram, style });
   },
 
+  /** Re-runs the layered auto-layout (same algorithm Doxygen analysis uses) on `diagram`. */
+  autoArrange(diagram: Diagram): Promise<Diagram> {
+    return invoke<Diagram>("auto_arrange", { diagram });
+  },
+
   listExamples(): Promise<{ name: string; path: string }[]> {
     return invoke("list_examples");
   },

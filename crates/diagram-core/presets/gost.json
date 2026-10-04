@@ -1,5 +1,5 @@
 {
-  "styleVersion": 1,
+  "styleVersion": 2,
   "name": "GOST",
   "font": ["Times New Roman", "Liberation Serif", "serif"],
   "fontSize": 13,
@@ -22,5 +22,13 @@
   },
   "orthogonalEdges": false,
   "edgeWidth": 1,
-  "arrowSize": 12
+  "arrowSize": 12,
+  "edgeDashLength": 6,
+  "edgeDashGap": 4,
+  "interfaceHidesAttributes": true,
+  "showStereotype": true,
+  "templateNotation": "corner",
+  "memberIconStyle": "text",
+  "showMethodParams": true,
+  "showMethodReturnType": true
 }

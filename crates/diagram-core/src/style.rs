@@ -10,7 +10,7 @@
 
 use serde::{Deserialize, Serialize};
 
-pub const STYLE_VERSION: u32 = 1;
+pub const STYLE_VERSION: u32 = 2;
 /// 1 CSS px = 0.75 pt, so the exported diagram matches the editor 1:1 at 100 % zoom.
 pub const PX_TO_PT: f64 = 0.75;
 
@@ -37,6 +37,39 @@ pub struct StyleProfile {
     pub orthogonal_edges: bool,
     pub edge_width: f64,
     pub arrow_size: f64,
+    /// Dash/gap length of dashed edges (realization, dependency, note connectors).
+    pub edge_dash_length: f64,
+    pub edge_dash_gap: f64,
+    /// GOST: interfaces omit the attributes compartment entirely (not just empty).
+    pub interface_hides_attributes: bool,
+    /// Show the «interface»/«struct»/etc. stereotype text above the class name.
+    pub show_stereotype: bool,
+    pub template_notation: TemplateNotation,
+    pub member_icon_style: MemberIconStyle,
+    pub show_method_params: bool,
+    pub show_method_return_type: bool,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TemplateNotation {
+    /// Don't mark template classes specially (params stay out of the display name).
+    None,
+    /// Small dashed box with the parameter list, attached to the top-right corner (GOST).
+    Corner,
+    /// `template<...>` row above the class name (PlantUML-style).
+    Header,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MemberIconStyle {
+    /// Plain `+`/`-`/`#`/`~` prefix (GOST).
+    Text,
+    /// VS-style shape (circle field / square method) colored by access.
+    Shape,
+    /// PlantUML-style colored circle per member, regardless of field/method.
+    Circle,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -84,6 +117,14 @@ impl Default for StyleProfile {
             orthogonal_edges: false,
             edge_width: 1.0,
             arrow_size: 12.0,
+            edge_dash_length: 6.0,
+            edge_dash_gap: 4.0,
+            interface_hides_attributes: true,
+            show_stereotype: true,
+            template_notation: TemplateNotation::Corner,
+            member_icon_style: MemberIconStyle::Text,
+            show_method_params: true,
+            show_method_return_type: true,
         }
     }
 }

@@ -10,7 +10,14 @@ function ThemedApp({ children }: { children: ReactNode }) {
   const theme = useMemo(
     () =>
       createTheme({
-        palette: { mode, primary: { main: "#1e3a5f" }, secondary: { main: "#f2a541" } },
+        // `primary` is used as plain text color too (e.g. text-variant buttons), so it needs
+        // a lighter shade in dark mode — the light-mode navy is nearly invisible on a dark
+        // background otherwise.
+        palette: {
+          mode,
+          primary: { main: mode === "dark" ? "#6fa8e0" : "#1e3a5f" },
+          secondary: { main: "#f2a541" },
+        },
       }),
     [mode],
   );

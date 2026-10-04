@@ -1,14 +1,7 @@
-import { loadFailed, loadStarted, loadSucceeded, measureClass } from "@/entities/diagram";
+import { loadFailed, loadStarted, loadSucceeded, sizeDiagram } from "@/entities/diagram";
 import { recentOpened, styleSet } from "@/entities/settings";
 import { backend } from "@/shared/api";
 import type { AppThunk } from "@/shared/model/hooks";
-import type { Diagram, StyleProfile } from "@/shared/types";
-
-/** Size boxes for the current style; Rust only estimates them for the initial layout. */
-function sized(diagram: Diagram, style: StyleProfile): Diagram {
-  for (const c of diagram.classes) Object.assign(c.position, measureClass(c, style));
-  return diagram;
-}
 
 /** Run Doxygen on `dir`; restore positions and style from its `diagramator.json`. */
 export const openProject =
@@ -18,7 +11,7 @@ export const openProject =
     try {
       const { diagram, project } = await backend.analyzeProject(dir);
       if (project?.style) dispatch(styleSet(project.style));
-      dispatch(loadSucceeded({ diagram: sized(diagram, getState().settings.style), projectDir: dir }));
+      dispatch(loadSucceeded({ diagram: sizeDiagram(diagram, getState().settings.style), projectDir: dir }));
       dispatch(recentOpened(dir));
     } catch (e) {
       dispatch(loadFailed(String(e)));
@@ -40,7 +33,7 @@ export const openExample =
 export const analyzeProject = (): AppThunk<Promise<void>> => async (dispatch, getState) => {
   if (!backend.available) {
     dispatch(loadStarted("sample (browser mode)"));
-    const diagram = sized(backend.sampleDiagram(), getState().settings.style);
+    const diagram = sizeDiagram(backend.sampleDiagram(), getState().settings.style);
     dispatch(loadSucceeded({ diagram, projectDir: null }));
     return;
   }
@@ -54,7 +47,7 @@ export const openDoxygenXml = (): AppThunk<Promise<void>> => async (dispatch, ge
   if (!dir) return;
   dispatch(loadStarted(dir));
   try {
-    const diagram = sized(await backend.loadDoxygenXml(dir), getState().settings.style);
+    const diagram = sizeDiagram(await backend.loadDoxygenXml(dir), getState().settings.style);
     dispatch(loadSucceeded({ diagram, projectDir: null }));
   } catch (e) {
     dispatch(loadFailed(String(e)));

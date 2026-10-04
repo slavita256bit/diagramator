@@ -100,7 +100,18 @@ pub fn write_style(path: String, style: StyleProfile) -> Result<(), String> {
 
 #[tauri::command]
 pub fn export_typst(path: String, diagram: Diagram, style: StyleProfile) -> Result<(), String> {
+    if let Some(dir) = PathBuf::from(&path).parent() {
+        diagram_core::typst::write_note_attachments(dir, &diagram).map_err(|e| format!("{path}: {e}"))?;
+    }
     std::fs::write(&path, diagram_core::typst::render(&diagram, &style)).map_err(|e| format!("{path}: {e}"))
+}
+
+/// Re-runs the layered auto-layout (same algorithm a fresh Doxygen analysis uses) on an
+/// already-open diagram. The frontend re-measures box sizes afterward for the current style.
+#[tauri::command]
+pub fn auto_arrange(mut diagram: Diagram) -> Diagram {
+    diagram_core::layout::auto_layout(&mut diagram);
+    diagram
 }
 
 #[derive(Serialize)]

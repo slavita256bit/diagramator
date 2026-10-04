@@ -45,6 +45,7 @@ fn cpp_classes_and_relations() {
     assert_eq!(
         names,
         [
+            "geo::Box",
             "geo::Canvas",
             "geo::Circle",
             "geo::Point",
@@ -52,6 +53,10 @@ fn cpp_classes_and_relations() {
             "geo::Shape"
         ]
     );
+
+    // Template params are a separate field, not baked into the display name.
+    let b = d.classes.iter().find(|c| c.name == "geo::Box").unwrap();
+    assert_eq!(b.template_params, vec!["T".to_string()]);
 
     let circle = d.classes.iter().find(|c| c.name == "geo::Circle").unwrap();
     assert!(circle.attributes.contains(&"- radius_: double".to_string()));

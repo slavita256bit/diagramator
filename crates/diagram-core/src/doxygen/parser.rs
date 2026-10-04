@@ -16,6 +16,7 @@ struct Compound {
     /// Qualified name as Doxygen reports it (`ns::Name`).
     qualified: String,
     display_name: String,
+    template_params: Vec<String>,
     attributes: Vec<String>,
     methods: Vec<String>,
     bases: Vec<String>,
@@ -78,28 +79,27 @@ fn parse_compound(def: Node) -> Option<Compound> {
     let kind = class_kind(def.attribute("kind")?)?;
     let java = def.attribute("language") == Some("Java");
     let qualified = child_text(def, "compoundname");
-    let mut display_name = if java {
+    let display_name = if java {
         qualified.replace("::", ".")
     } else {
         qualified.clone()
     };
-    if let Some(tpl) = child(def, "templateparamlist") {
-        let params: Vec<String> = children(tpl, "param")
-            .map(|p| {
-                let decl = child_text(p, "declname");
-                if decl.is_empty() {
-                    // `class T` / `typename T` → keep only the name.
-                    let t = child_text(p, "type");
-                    t.rsplit(' ').next().unwrap_or(&t).to_owned()
-                } else {
-                    decl
-                }
-            })
-            .collect();
-        if !params.is_empty() {
-            display_name = format!("{display_name}<{}>", params.join(", "));
-        }
-    }
+    let template_params: Vec<String> = child(def, "templateparamlist")
+        .map(|tpl| {
+            children(tpl, "param")
+                .map(|p| {
+                    let decl = child_text(p, "declname");
+                    if decl.is_empty() {
+                        // `class T` / `typename T` → keep only the name.
+                        let t = child_text(p, "type");
+                        t.rsplit(' ').next().unwrap_or(&t).to_owned()
+                    } else {
+                        decl
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default();
 
     let bases = children(def, "basecompoundref")
         .filter_map(|b| b.attribute("refid").map(str::to_owned))
@@ -111,6 +111,7 @@ fn parse_compound(def: Node) -> Option<Compound> {
         java,
         qualified,
         display_name,
+        template_params,
         attributes: Vec::new(),
         methods: Vec::new(),
         bases,
@@ -266,11 +267,14 @@ fn build_diagram(compounds: Vec<Compound>) -> Diagram {
             kind: c.kind,
             attributes: c.attributes,
             methods: c.methods,
+            template_params: c.template_params,
+            attributes_collapsed: false,
+            methods_collapsed: false,
             position: Position::default(),
         })
         .collect();
 
-    Diagram { classes, relations }
+    Diagram { classes, relations, notes: Vec::new() }
 }
 
 /// Relations between the same pair collapse to the strongest one

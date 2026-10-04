@@ -27,6 +27,7 @@ pub fn run() {
             commands::read_style,
             commands::write_style,
             commands::export_typst,
+            commands::auto_arrange,
             commands::save_project,
             commands::list_examples,
             commands::prepare_example,

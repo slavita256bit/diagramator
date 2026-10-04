@@ -9,6 +9,8 @@ export interface ProjectFile {
   autoExport: boolean;
   style: StyleProfile | null;
   positions: Record<string, { x: number; y: number }>;
+  collapsed: Record<string, { attributes: boolean; methods: boolean }>;
+  notes: Diagram["notes"];
 }
 
 export interface OpenedProject {

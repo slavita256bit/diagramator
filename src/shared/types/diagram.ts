@@ -25,7 +25,23 @@ export interface ClassNode {
   attributes: string[];
   /** UML-formatted, e.g. `+ calculate(): void`. */
   methods: string[];
+  /** Template/generic parameter names (e.g. `["T", "Alloc"]`); empty if not a template. */
+  templateParams: string[];
+  attributesCollapsed: boolean;
+  methodsCollapsed: boolean;
   position: Position;
+}
+
+/** A freestanding comment box, optionally attached to one class with a dashed
+ * connector (GOST fig 4.5's `{comment}` box). Not derived from Doxygen. */
+export interface Note {
+  id: string;
+  text: string;
+  position: Position;
+  linkedClass?: string;
+  /** Attached image as a data URI (`data:image/png;base64,...`); embedded directly in
+   * `diagramator.json` and in the exported Typst document (no separate asset file). */
+  image?: string;
 }
 
 /** `source` is the dependent side (child / whole / user). */
@@ -45,4 +61,5 @@ export interface Point {
 export interface Diagram {
   classes: ClassNode[];
   relations: Relation[];
+  notes: Note[];
 }

@@ -34,6 +34,20 @@ const NUMBERS: [NumberKey, string][] = [
   ["cornerRadius", "Corner radius"],
   ["edgeWidth", "Edge width"],
   ["arrowSize", "Arrow size"],
+  ["edgeDashLength", "Dash length"],
+  ["edgeDashGap", "Dash gap"],
+];
+
+const MEMBER_ICON_STYLES: [StyleProfile["memberIconStyle"], string][] = [
+  ["text", "+/-/# text"],
+  ["shape", "Shape by access (VS)"],
+  ["circle", "Colored circle (PlantUML)"],
+];
+
+const TEMPLATE_NOTATIONS: [StyleProfile["templateNotation"], string][] = [
+  ["corner", "Dashed corner box (GOST)"],
+  ["header", "template<...> header row"],
+  ["none", "Don't mark templates"],
 ];
 
 const COLORS: [keyof StyleColors, string][] = [
@@ -113,12 +127,74 @@ export function StyleDrawer({ open, onClose }: { open: boolean; onClose: () => v
               label="Kind badge (C/I/E)"
             />
             <FormControlLabel
+              control={<Switch checked={style.showStereotype} onChange={(e) => set({ showStereotype: e.target.checked })} />}
+              label="Stereotype («interface» etc.)"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={style.interfaceHidesAttributes}
+                  onChange={(e) => set({ interfaceHidesAttributes: e.target.checked })}
+                />
+              }
+              label="Interfaces hide attributes (GOST)"
+            />
+            <FormControlLabel
               control={
                 <Switch checked={style.orthogonalEdges} onChange={(e) => set({ orthogonalEdges: e.target.checked })} />
               }
               label="Orthogonal edges (90° only)"
             />
           </Box>
+
+          <Typography variant="subtitle2">Members</Typography>
+          <TextField
+            select
+            size="small"
+            label="Member icon"
+            value={style.memberIconStyle}
+            onChange={(e) => set({ memberIconStyle: e.target.value as StyleProfile["memberIconStyle"] })}
+          >
+            {MEMBER_ICON_STYLES.map(([v, label]) => (
+              <MenuItem key={v} value={v}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+          <Box>
+            <FormControlLabel
+              control={
+                <Switch checked={style.showMethodParams} onChange={(e) => set({ showMethodParams: e.target.checked })} />
+              }
+              label="Show method parameters"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={style.showMethodReturnType}
+                  onChange={(e) => set({ showMethodReturnType: e.target.checked })}
+                />
+              }
+              label="Show method return type"
+            />
+          </Box>
+
+          <Typography variant="subtitle2">Templates</Typography>
+          <TextField
+            select
+            size="small"
+            label="Template notation"
+            value={style.templateNotation}
+            onChange={(e) => set({ templateNotation: e.target.value as StyleProfile["templateNotation"] })}
+          >
+            {TEMPLATE_NOTATIONS.map(([v, label]) => (
+              <MenuItem key={v} value={v}>
+                {label}
+              </MenuItem>
+            ))}
+          </TextField>
+
+          <Typography variant="subtitle2">Colors</Typography>
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 1 }}>
             {COLORS.map(([key, label]) => (
               <Box key={key} component="label" sx={{ display: "flex", alignItems: "center", gap: 0.5, fontSize: 13 }}>

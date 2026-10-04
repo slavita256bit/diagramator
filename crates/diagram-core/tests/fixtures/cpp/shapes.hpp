@@ -1,9 +1,4 @@
-#pragma once//! Locates the external tools (Doxygen, Typst).
-//!
-//! Lookup order:
-//! 1. `<app data>/tools/<name>` — where the (future) updater installs newer releases;
-//! 2. the bundled sidecar next to the app executable (Tauri `externalBin`);
-//! 3. `<name>` on `PATH`.
+#pragma once
 #include <memory>
 #include <string>
 #include <vector>
@@ -49,6 +44,15 @@ public:
 private:
     std::vector<std::unique_ptr<Shape>> shapes_;
     Canvas* parent_ = nullptr;
+};
+
+template <typename T>
+class Box {
+public:
+    void set(T value);
+    T get() const;
+private:
+    T value_;
 };
 
 } // namespace geo

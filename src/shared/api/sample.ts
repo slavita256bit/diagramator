@@ -9,6 +9,9 @@ export const sampleDiagram: Diagram = {
       kind: "class",
       attributes: ["# name_: std::string"],
       methods: ["+ ~Shape()", "+ area(): double {abstract}", "+ name(): const std::string&"],
+      templateParams: [],
+      attributesCollapsed: false,
+      methodsCollapsed: false,
       position: { x: 360, y: 0, width: 226, height: 128 },
     },
     {
@@ -17,6 +20,9 @@ export const sampleDiagram: Diagram = {
       kind: "class",
       attributes: ["- center_: Point", "- radius_: double"],
       methods: ["+ Circle(center: Point, radius: double)", "+ area(): double", "+ count(): int {static}"],
+      templateParams: [],
+      attributesCollapsed: false,
+      methodsCollapsed: false,
       position: { x: 160, y: 230, width: 305, height: 146 },
     },
     {
@@ -25,6 +31,9 @@ export const sampleDiagram: Diagram = {
       kind: "class",
       attributes: ["- topLeft_: Point", "- bottomRight_: Point"],
       methods: ["+ area(): double"],
+      templateParams: [],
+      attributesCollapsed: false,
+      methodsCollapsed: false,
       position: { x: 530, y: 230, width: 175, height: 110 },
     },
     {
@@ -33,6 +42,9 @@ export const sampleDiagram: Diagram = {
       kind: "struct",
       attributes: ["+ x: double", "+ y: double"],
       methods: [],
+      templateParams: [],
+      attributesCollapsed: false,
+      methodsCollapsed: false,
       position: { x: 380, y: 470, width: 140, height: 110 },
     },
     {
@@ -41,6 +53,9 @@ export const sampleDiagram: Diagram = {
       kind: "class",
       attributes: ["- shapes_: std::vector<std::unique_ptr<Shape>>", "- parent_: Canvas*"],
       methods: ["+ add(shape: std::unique_ptr<Shape>): void", "+ render(width: int, height: int): void"],
+      templateParams: [],
+      attributesCollapsed: false,
+      methodsCollapsed: false,
       position: { x: -80, y: -20, width: 355, height: 128 },
     },
   ],
@@ -52,4 +67,5 @@ export const sampleDiagram: Diagram = {
     { source: "canvas", target: "shape", type: "composition" },
     { source: "canvas", target: "canvas", type: "association" },
   ],
+  notes: [],
 };
