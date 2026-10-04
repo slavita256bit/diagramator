@@ -46,10 +46,23 @@ function parseArgs() {
   return triple;
 }
 
+const RETRIES = 3;
+
+/** Retries transient network failures (CI runners occasionally hit a mid-download reset). */
 async function download(url, dest) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
-  writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
+      writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
+      return;
+    } catch (e) {
+      if (attempt >= RETRIES) throw e;
+      const delay = 2 ** attempt * 1000;
+      console.log(`[fetch-sidecars] ${url} failed (${e.message}), retrying in ${delay}ms (${attempt}/${RETRIES})`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
 }
 
 function extract(archivePath, destDir) {
