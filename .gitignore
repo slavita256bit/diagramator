@@ -8,5 +8,7 @@ src-tauri/binaries/*
 !src-tauri/binaries/README.md
 src-tauri/gen/
 .idea
-# updater signing key — private half, never commit (see README/plan for setup)
+# updater signing keypair — private half must never be committed; public half is already
+# copied into tauri.conf.json so the file itself doesn't need to be tracked either
 src-tauri/updater.key
+src-tauri/updater.key.pub

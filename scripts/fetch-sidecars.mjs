@@ -93,10 +93,22 @@ async function fetchTool(toolName, owner, repo, tag, asset, triple) {
     if (!found) throw new Error(`could not find "${toolName}" binary inside ${asset}`);
 
     mkdirSync(binariesDir, { recursive: true });
-    const destName = `${toolName}-${triple}${triple.includes("windows") ? ".exe" : ""}`;
+    // "diagramator-" prefix: Linux packaging (.deb/.rpm/AppImage) installs externalBin
+    // entries into the same directory as the main executable, so a plain "doxygen"/"typst"
+    // name would collide with the system doxygen package (rpm refused to install over
+    // /usr/bin/doxygen). Must match `bundled_file_name()` in src-tauri/src/tools.rs.
+    const destName = `diagramator-${toolName}-${triple}${triple.includes("windows") ? ".exe" : ""}`;
     const dest = join(binariesDir, destName);
     copyFileSync(found, dest);
     if (process.platform !== "win32") chmodSync(dest, 0o755);
+
+    // Sanity-check the binary actually runs before trusting it into a release — catches a
+    // truncated/corrupted download or a wrong-arch extraction silently producing a dead sidecar.
+    try {
+      execFileSync(dest, ["--version"], { stdio: "pipe" });
+    } catch (e) {
+      throw new Error(`downloaded ${toolName} doesn't run (${asset}): ${e.message}`);
+    }
     console.log(`[fetch-sidecars] wrote ${dest}`);
   } finally {
     rmSync(work, { recursive: true, force: true });

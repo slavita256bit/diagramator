@@ -20,19 +20,28 @@ export function AppToolbar() {
   const [styleOpen, setStyleOpen] = useState(false);
   return (
     <AppBar position="static" elevation={0}>
-      <Toolbar variant="dense" sx={{ gap: 2 }}>
-        <Typography variant="h6" sx={{ fontWeight: 700 }}>
+      <Toolbar
+        variant="dense"
+        sx={{
+          gap: 2,
+          flexWrap: "wrap",
+          rowGap: 1,
+          py: 1,
+          "& .MuiButton-root, & .MuiChip-root": { whiteSpace: "nowrap" },
+        }}
+      >
+        <Typography variant="h6" sx={{ fontWeight: 700, flexShrink: 0 }}>
           Diagramator
         </Typography>
         <AnalyzeButtons />
         <RecentMenu />
         <SaveButton />
         <ExportTypstButton />
-        <Typography variant="body2" noWrap sx={{ opacity: 0.8, flex: 1, minWidth: 0 }} title={source ?? ""}>
+        <Typography variant="body2" noWrap sx={{ opacity: 0.8, flex: 1, minWidth: 100 }} title={source ?? ""}>
           {source}
         </Typography>
         <ToolStatusChips />
-        <Box>
+        <Box sx={{ flexShrink: 0 }}>
           <Tooltip title="Diagram style">
             <IconButton color="inherit" onClick={() => setStyleOpen(true)}>
               <PaletteIcon />

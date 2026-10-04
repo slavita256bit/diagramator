@@ -29,6 +29,14 @@ impl Tool {
     fn file_name(self) -> String {
         format!("{}{}", self.name(), std::env::consts::EXE_SUFFIX)
     }
+
+    /// Sidecar file name next to the installed executable. Prefixed (unlike `file_name`)
+    /// because Linux packaging (.deb/.rpm/AppImage) installs `externalBin` entries straight
+    /// into the same directory as the main binary — plain "doxygen" there collided with the
+    /// system `doxygen` package (`rpm` refused to install: file conflict on `/usr/bin/doxygen`).
+    fn bundled_file_name(self) -> String {
+        format!("diagramator-{}{}", self.name(), std::env::consts::EXE_SUFFIX)
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -60,7 +68,7 @@ fn locate(app: &AppHandle, tool: Tool) -> (PathBuf, ToolSource) {
         .ok()
         .and_then(|e| e.parent().map(Path::to_path_buf))
     {
-        let p = dir.join(tool.file_name());
+        let p = dir.join(tool.bundled_file_name());
         if p.is_file() {
             return (p, ToolSource::Bundled);
         }
@@ -248,6 +256,11 @@ fn extract_archive(archive: &Path, dest: &Path) -> Result<(), String> {
         c.arg("-xf").arg(archive).arg("-C").arg(dest);
         c
     };
+    // When running from an AppImage, the runtime points `LD_LIBRARY_PATH` at its own bundled
+    // libs (e.g. a newer liblzma) so the *app* can load them — but that env is inherited by
+    // this child process too, making the system `tar`/`unzip` load the wrong library version
+    // and crash (`version 'XZ_5.6.0' not found`). Extraction tools must use the system libs.
+    cmd.env_remove("LD_LIBRARY_PATH");
     let status = cmd.status().map_err(|e| e.to_string())?;
     status
         .success()
