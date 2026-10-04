@@ -28,6 +28,8 @@ Tools: `pnpm` (not npm), `rg` (not grep). Needs `doxygen` on PATH; `typst` for e
 - `src/` — frontend, Feature-Sliced Design: `app → pages → widgets → features → entities → shared`
   (import only downward).
 - `examples/` — `cpp-shop`, `java-library`: manual test projects.
+- `scripts/fetch-sidecars.mjs` — CI-only: downloads pinned doxygen/typst releases into
+  `src-tauri/binaries/` for release builds (see `src-tauri/binaries/README.md`).
 
 ## Contracts (don't break silently)
 - IR: `crates/diagram-core/src/ir.rs` ↔ `src/shared/types/diagram.ts` — change both.

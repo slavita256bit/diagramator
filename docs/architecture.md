@@ -59,5 +59,15 @@ Recent list (max 10, removable) in localStorage via `src/app/store/persist.ts`; 
 reopens on start. `examples/` is bundled as a Tauri resource and copied to
 `<app data>/examples/` on first open (install dir is read-only).
 
-## Planned (see PLAN.md)
-- Tool updater: download newer doxygen/typst releases into `<app data>/tools/`.
+## Releases, sidecars, updates
+Tag `v*` → `.github/workflows/release.yml` builds installers for all platforms via
+`tauri-apps/tauri-action`, after `scripts/fetch-sidecars.mjs` downloads pinned
+`doxygen`/`typst` releases into `src-tauri/binaries/` for that job's target triple.
+`bundle.externalBin` is injected with `--config` at that point only — not in
+`tauri.conf.json` — since Tauri checks the sidecar files exist at build time, and they
+aren't committed (`cargo check`/`pnpm tauri dev` keep using `PATH`).
+In-app updaters: `tools::check_updates`/`update_tool` (GitHub releases API + sha256
+verification) refresh doxygen/typst into `<app data>/tools/`; `tauri-plugin-updater`
+(`AppUpdateDialog`) self-updates Diagramator from the same release's signed
+`latest.json`. Third-party licenses (doxygen GPL-2.0, typst Apache-2.0) ship under
+`licenses/` in the bundle, from `/THIRD_PARTY_LICENSES/`.

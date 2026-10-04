@@ -1,0 +1,78 @@
+name: release
+
+# Builds installers for every platform and attaches them to a draft GitHub Release.
+# `bundle.externalBin` isn't in tauri.conf.json (it'd break `cargo check`/`pnpm tauri dev`
+# for everyone, since Tauri checks those files exist at build time) — it's injected here,
+# after scripts/fetch-sidecars.mjs has downloaded doxygen/typst for this job's target.
+#
+# TAURI_SIGNING_PRIVATE_KEY(_PASSWORD) are optional: set them (see src-tauri/tauri.conf.json's
+# `plugins.updater.pubkey` for the matching public key) to also get a signed `latest.json`
+# for tauri-plugin-updater. Without them, installers still build, just without self-update.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: ""
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ""
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            args: "--target aarch64-apple-darwin"
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            args: "--target x86_64-apple-darwin"
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install Linux Tauri dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "src-tauri -> target"
+
+      - run: pnpm install
+
+      - name: fetch doxygen/typst sidecars
+        run: node scripts/fetch-sidecars.mjs --triple ${{ matrix.target }}
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Diagramator ${{ github.ref_name }}"
+          releaseDraft: true
+          prerelease: false
+          args: '--config {"bundle":{"externalBin":["binaries/doxygen","binaries/typst"]}} ${{ matrix.args }}'

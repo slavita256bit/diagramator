@@ -65,6 +65,16 @@ pub async fn tool_status(app: AppHandle) -> Vec<ToolStatus> {
     .unwrap_or_default()
 }
 
+#[tauri::command]
+pub async fn check_tool_updates(app: AppHandle) -> Vec<tools::ToolUpdate> {
+    tools::check_updates(&app).await
+}
+
+#[tauri::command]
+pub async fn update_tool(app: AppHandle, name: String) -> Result<ToolStatus, String> {
+    tools::update_tool(&app, &name).await
+}
+
 async fn run_blocking<F>(f: F) -> Result<Diagram, String>
 where
     F: FnOnce() -> diagram_core::Result<Diagram> + Send + 'static,

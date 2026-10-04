@@ -16,10 +16,14 @@ pub fn run() {
     }
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .invoke_handler(tauri::generate_handler![
             commands::analyze_project,
             commands::load_doxygen_xml,
             commands::tool_status,
+            commands::check_tool_updates,
+            commands::update_tool,
             commands::read_style,
             commands::write_style,
             commands::export_typst,

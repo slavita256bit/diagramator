@@ -3,6 +3,7 @@ import { AppBar, Box, IconButton, Toolbar, Tooltip, Typography } from "@mui/mate
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import PaletteIcon from "@mui/icons-material/Palette";
+import { AppUpdateDialog } from "@/features/app-update";
 import { StyleDrawer } from "@/features/edit-style";
 import { ExportTypstButton } from "@/features/export-typst";
 import { SaveButton } from "@/features/save-project";
@@ -45,6 +46,7 @@ export function AppToolbar() {
         </Box>
       </Toolbar>
       <StyleDrawer open={styleOpen} onClose={() => setStyleOpen(false)} />
+      <AppUpdateDialog />
     </AppBar>
   );
 }

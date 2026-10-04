@@ -8,3 +8,5 @@ src-tauri/binaries/*
 !src-tauri/binaries/README.md
 src-tauri/gen/
 .idea
+# updater signing key — private half, never commit (see README/plan for setup)
+src-tauri/updater.key

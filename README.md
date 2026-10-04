@@ -2,7 +2,7 @@
 
 Desktop class-diagram generator for C++/Java: runs Doxygen over a source tree,
 converts its XML into a diagram IR and renders it as an interactive UML class
-diagram. (Typst/Visio export and tool updates are later phases — see `PLAN.md`.)
+diagram, with Typst export and self-/tool-updates — see `PLAN.md` for status.
 
 Tauri v2 · Rust · React + TypeScript + Vite · MUI · Redux Toolkit · React Flow
 
@@ -13,7 +13,8 @@ Tauri v2 · Rust · React + TypeScript + Vite · MUI · Redux Toolkit · React F
 - Tauri Linux deps (Fedora):
   `sudo dnf install webkit2gtk4.1-devel openssl-devel curl wget file libappindicator-gtk3-devel librsvg2-devel`
   (other platforms: https://v2.tauri.app/start/prerequisites/)
-- `doxygen` on `PATH` (until sidecars are bundled — see `src-tauri/binaries/README.md`)
+- `doxygen` on `PATH` for local dev (`pnpm tauri dev`/`pnpm tauri build` always use `PATH`;
+  only release builds bundle sidecars — see `src-tauri/binaries/README.md`)
 
 ## Commands
 
@@ -27,6 +28,13 @@ pnpm build              # typecheck + build frontend
 cargo test -p diagram-core                                   # parser/IR tests (runs real doxygen)
 cargo run -p diagram-core --example analyze -- <src-dir>    # print IR JSON for a folder
 ```
+
+## Third-party tools
+
+Release builds bundle `doxygen` and `typst` as external binaries (unmodified
+upstream builds; see `scripts/fetch-sidecars.mjs`). Their licenses
+(GPL-2.0 and Apache-2.0) ship inside the installer under `licenses/` — also in
+`THIRD_PARTY_LICENSES/` in this repo.
 
 ## Layout
 

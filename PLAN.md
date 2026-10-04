@@ -83,20 +83,26 @@ Done so far:
 Next if still slow: profile in WebKit inspector (right click → Inspect in `pnpm tauri dev`);
 suspects: edge re-renders on drag (FloatingEdge per frame), dotted Background, box-shadow.
 
-## 9. Releases, installers, bundled tools, updates
-- GitHub Actions on tag `v*`: `tauri-apps/tauri-action` matrix (windows-latest, ubuntu-22.04,
-  macos-latest arm64 + x86_64) → draft GitHub Release with installers:
-  Windows `.msi`/NSIS `.exe`, Linux `.AppImage`/`.deb`/`.rpm`, macOS `.dmg`.
-- Bundle `typst` and `doxygen` as Tauri sidecars (`bundle.externalBin`, per target triple
-  `binaries/<name>-<triple>`); CI script downloads pinned versions from their GitHub releases
-  (typst: typst/typst, doxygen: doxygen/doxygen) before `tauri build`. `tools.rs` already
-  looks for sidecars next to the executable.
-- Tool updates (already planned lookup order): check GitHub releases API for newer typst/doxygen,
-  download to `<app data>/tools/`, verify checksum, show in tool-status chips; one "Update" button.
-- App updates: `tauri-plugin-updater` + signed `latest.json` published by the same workflow
-  (needs `TAURI_SIGNING_PRIVATE_KEY` secret). macOS notarization/Windows signing: later, needs certs.
-- Licenses: doxygen is GPL-2.0 — shipped as a separate executable (not linked), include its license
-  text + source link in the bundle.
+## 9. Releases, installers, bundled tools, updates — DONE (except two manual steps below)
+- `.github/workflows/release.yml`: tag `v*` → `tauri-apps/tauri-action` matrix (windows-latest,
+  ubuntu-22.04, macos-latest arm64 + x86_64) → draft GitHub Release with installers.
+  `bundle.externalBin` is injected via `--config` at build time only (not in `tauri.conf.json`,
+  or `cargo check`/`pnpm tauri dev` would break — see `src-tauri/binaries/README.md`).
+- `scripts/fetch-sidecars.mjs` downloads pinned `doxygen`/`typst` releases per target triple into
+  `src-tauri/binaries/` before the CI build; `tools.rs` already looked for sidecars next to the
+  executable.
+- In-app tool updates: `tools::check_updates`/`update_tool` hit each tool's GitHub releases API,
+  verify the downloaded asset against GitHub's `sha256:` digest, install into `<app data>/tools/`;
+  `ToolStatusChips` shows an update icon and installs on click.
+- App self-update: `tauri-plugin-updater` wired in, `AppUpdateDialog` checks on launch. **Needs a
+  one-time manual step**: run `pnpm tauri signer generate -w src-tauri/updater.key`, put the
+  printed public key into `tauri.conf.json`'s `plugins.updater.pubkey` (currently a placeholder),
+  and add `TAURI_SIGNING_PRIVATE_KEY`/`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` as GitHub repo secrets
+  (not done by the agent — credential handling).
+- Licenses: MIT `/LICENSE` for Diagramator; `/THIRD_PARTY_LICENSES/` has doxygen's GPL-2.0 and
+  typst's Apache-2.0 texts, shipped into the bundle under `licenses/`.
+- Still deferred, needs certs: macOS notarization, Windows code-signing (unsigned installers will
+  show Gatekeeper/SmartScreen warnings until then).
 
 ## Decided
 - Font: Times New Roman default; GOST type A / Arial switchable.

@@ -5,3 +5,10 @@ export interface ToolStatus {
   version: string | null;
   source: "updated" | "bundled" | "system";
 }
+
+export interface ToolUpdate {
+  name: string;
+  current: string | null;
+  latest: string;
+  available: boolean;
+}

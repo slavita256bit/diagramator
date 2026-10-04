@@ -1,6 +1,6 @@
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
-import type { Diagram, OpenedProject, StyleProfile, ToolStatus } from "@/shared/types";
+import type { Diagram, OpenedProject, StyleProfile, ToolStatus, ToolUpdate } from "@/shared/types";
 import { sampleDiagram } from "./sample";
 
 /** Typed wrappers around the Rust commands in `src-tauri/src/commands.rs`. */
@@ -24,6 +24,15 @@ export const backend = {
 
   toolStatus(): Promise<ToolStatus[]> {
     return invoke<ToolStatus[]>("tool_status");
+  },
+
+  checkToolUpdates(): Promise<ToolUpdate[]> {
+    return invoke<ToolUpdate[]>("check_tool_updates");
+  },
+
+  /** Downloads the latest release of `name` ("doxygen"/"typst") into app data; returns its new status. */
+  updateTool(name: string): Promise<ToolStatus> {
+    return invoke<ToolStatus>("update_tool", { name });
   },
 
   /** Reads a style profile file; Rust fills defaults and migrates old versions. */
