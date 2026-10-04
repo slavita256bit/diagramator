@@ -41,7 +41,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "REPLACE_WITH_PUBKEY_FROM_pnpm_tauri_signer_generate",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYxRTFGMzg4NThFRTM1NjgKUldSb05lNVlpUFBoWWVyTGZtZWx4OVdXaDA5azVMVXQ3dHQrcWFrelFyWmtNSFN1ekJHYktYOTMK",
       "endpoints": [
         "https://github.com/slavita256bit/diagramator/releases/latest/download/latest.json"
       ]
