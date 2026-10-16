@@ -98,8 +98,8 @@ jobs:
 
       - run: pnpm install
 
-      - name: test sidecar packaging helpers
-        run: node --test scripts/sidecar-files.test.mjs
+      - name: test release and sidecar helpers
+        run: node --test scripts/release.test.mjs scripts/sidecar-files.test.mjs
 
       - name: fetch doxygen/typst sidecars
         run: node scripts/fetch-sidecars.mjs --triple ${{ matrix.target }}

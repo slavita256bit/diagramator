@@ -132,3 +132,7 @@ The sidecar fetch script preserves sibling DLLs and the generated Tauri resource
 installs them next to the EXE. CI probes both version and XML generation with LLVM removed
 from PATH. The tool updater copies those DLLs too and validates the extracted tool before
 replacing it. Lookup skips incomplete Windows Doxygen overrides created by older updates.
+
+Release preparation and tag publication are described in [releasing.md](releasing.md).
+The two-step helper stages version files, requires a manual commit, and then pushes the
+committed branch and annotated release tag without creating a commit.
