@@ -20,8 +20,40 @@ on:
 permissions:
   contents: write
 
+# Avoid overlapping publication runs for the same tag.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  prepare-release:
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.release.outputs.result }}
+    steps:
+      - name: find or create the shared release
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const tag = context.ref.replace(/^refs\/tags\//, '');
+            const releases = await github.paginate(github.rest.repos.listReleases, {
+              owner, repo, per_page: 100,
+            });
+            const matches = releases.filter(release => release.tag_name === tag);
+            if (matches.length > 1) {
+              throw new Error(`Multiple releases exist for ${tag}; choose the intended release before uploading.`);
+            }
+            if (matches.length === 1) return matches[0].id;
+            const { data } = await github.rest.repos.createRelease({
+              owner, repo, tag_name: tag, name: `Diagramator ${tag}`,
+              target_commitish: context.sha, draft: true, prerelease: false,
+            });
+            return data.id;
+
   release:
+    needs: prepare-release
     strategy:
       fail-fast: false
       matrix:
@@ -78,8 +110,37 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
+          releaseId: ${{ needs.prepare-release.outputs.release_id }}
           tagName: ${{ github.ref_name }}
           releaseName: "Diagramator ${{ github.ref_name }}"
           releaseDraft: true
           prerelease: false
           args: '--config src-tauri/binaries/sidecars.conf.json ${{ matrix.args }}'
+
+  verify-release:
+    needs: [prepare-release, release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: verify installers for every platform were uploaded
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const release_id = Number('${{ needs.prepare-release.outputs.release_id }}');
+            const assets = await github.paginate(github.rest.repos.listReleaseAssets, {
+              owner, repo, release_id, per_page: 100,
+            });
+            const version = context.ref.replace(/^refs\/tags\/v/, '');
+            const expected = [
+              `Diagramator_${version}_x64_en-US.msi`,
+              `Diagramator_${version}_x64-setup.exe`,
+              `Diagramator_${version}_aarch64.dmg`,
+              `Diagramator_${version}_x64.dmg`,
+              `Diagramator_${version}_amd64.deb`,
+              `Diagramator-${version}-1.x86_64.rpm`,
+              `Diagramator_${version}_amd64.AppImage`,
+            ];
+            const names = new Set(assets.map(asset => asset.name));
+            const missing = expected.filter(name => !names.has(name));
+            if (missing.length) throw new Error(`Release is missing installers: ${missing.join(', ')}`);
+            core.info(`Verified ${expected.length} installers in release ${release_id}.`);
