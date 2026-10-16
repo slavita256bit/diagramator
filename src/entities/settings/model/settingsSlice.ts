@@ -1,8 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { StyleProfile } from "@/shared/types";
-import { normalizeStyle } from "@/shared/config";
+import { isAppThemeId, normalizeStyle, type AppThemeId } from "@/shared/config";
 
-export type ThemeMode = "light" | "dark";
 
 export interface RecentProject {
   path: string;
@@ -10,7 +9,7 @@ export interface RecentProject {
 }
 
 export interface SettingsState {
-  themeMode: ThemeMode;
+  theme: AppThemeId;
   /** Style for new projects; a project's own style (from `diagramator.json`) replaces it on open. */
   style: StyleProfile;
   /** Most recent first. */
@@ -18,7 +17,7 @@ export interface SettingsState {
 }
 
 const MAX_RECENT = 10;
-const STORAGE_KEY = { style: "diagramator.style", recent: "diagramator.recent" };
+const STORAGE_KEY = { style: "diagramator.style", recent: "diagramator.recent", theme: "diagramator.theme" };
 
 function read<T>(key: string): T | null {
   try {
@@ -33,13 +32,18 @@ export function persistSettings(s: SettingsState) {
   try {
     localStorage.setItem(STORAGE_KEY.style, JSON.stringify(s.style));
     localStorage.setItem(STORAGE_KEY.recent, JSON.stringify(s.recent));
+    localStorage.setItem(STORAGE_KEY.theme, JSON.stringify(s.theme));
   } catch {
     /* storage unavailable: settings just aren't remembered */
   }
 }
 
 const initialState: SettingsState = {
-  themeMode: window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light",
+  theme: (() => {
+    const saved = read<string>(STORAGE_KEY.theme);
+    if (isAppThemeId(saved)) return saved;
+    return window.matchMedia?.("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  })(),
   style: normalizeStyle(read<Partial<StyleProfile>>(STORAGE_KEY.style)),
   recent: (read<RecentProject[]>(STORAGE_KEY.recent) ?? []).filter((r) => typeof r?.path === "string"),
 };
@@ -48,8 +52,8 @@ export const settingsSlice = createSlice({
   name: "settings",
   initialState,
   reducers: {
-    themeToggled(state) {
-      state.themeMode = state.themeMode === "dark" ? "light" : "dark";
+    themeSet(state, action: PayloadAction<AppThemeId>) {
+      state.theme = action.payload;
     },
     styleSet(state, action: PayloadAction<StyleProfile>) {
       state.style = action.payload;
@@ -65,11 +69,11 @@ export const settingsSlice = createSlice({
     },
   },
   selectors: {
-    selectThemeMode: (s) => s.themeMode,
+    selectTheme: (s) => s.theme,
     selectStyle: (s) => s.style,
     selectRecent: (s) => s.recent,
   },
 });
 
-export const { themeToggled, styleSet, recentOpened, recentRemoved } = settingsSlice.actions;
-export const { selectThemeMode, selectStyle, selectRecent } = settingsSlice.selectors;
+export const { themeSet, styleSet, recentOpened, recentRemoved } = settingsSlice.actions;
+export const { selectTheme, selectStyle, selectRecent } = settingsSlice.selectors;

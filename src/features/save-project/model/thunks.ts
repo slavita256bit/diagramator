@@ -1,4 +1,4 @@
-import { loadFailed, saveStatusChanged } from "@/entities/diagram";
+import { computeRoutesAsync, loadFailed, saveStatusChanged } from "@/entities/diagram";
 import { backend } from "@/shared/api";
 import type { AppThunk } from "@/shared/model/hooks";
 
@@ -8,7 +8,10 @@ export const saveProject = (): AppThunk<Promise<void>> => async (dispatch, getSt
   if (!diagram || !projectDir || !backend.available) return;
   dispatch(saveStatusChanged("saving"));
   try {
-    await backend.saveProject(projectDir, diagram, getState().settings.style);
+    const style = getState().settings.style;
+    const routes = await computeRoutesAsync(diagram, style);
+    const routed = { ...diagram, relations: diagram.relations.map((r, i) => ({ ...r, route: routes[i] })) };
+    await backend.saveProject(projectDir, routed, style);
     // An edit that landed while saving keeps the project "unsaved" for the next autosave.
     if (getState().diagram.saveStatus === "saving") dispatch(saveStatusChanged("saved"));
   } catch (e) {

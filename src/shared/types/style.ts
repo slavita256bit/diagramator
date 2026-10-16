@@ -18,6 +18,13 @@ export interface StyleProfile {
   colors: StyleColors;
   /** Route edges with horizontal/vertical segments only. */
   orthogonalEdges: boolean;
+  edgeMergeTargets: boolean;
+  edgeEditable: boolean;
+  edgeClearance: number;
+  edgePortSpacing: number;
+  edgeBendPenalty: number;
+  edgeSourceSide: "top" | "bottom" | "left" | "right";
+  edgeTargetSide: "top" | "bottom" | "left" | "right";
   edgeWidth: number;
   arrowSize: number;
   /** Dash/gap length of dashed edges (realization, dependency, note connectors). */

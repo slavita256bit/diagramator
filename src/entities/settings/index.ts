@@ -1,14 +1,13 @@
 export {
   settingsSlice,
-  themeToggled,
+  themeSet,
   styleSet,
   recentOpened,
   recentRemoved,
   persistSettings,
-  selectThemeMode,
+  selectTheme,
   selectStyle,
   selectRecent,
   type RecentProject,
   type SettingsState,
-  type ThemeMode,
 } from "./model/settingsSlice";

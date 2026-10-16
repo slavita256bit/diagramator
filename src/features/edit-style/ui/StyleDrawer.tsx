@@ -139,12 +139,48 @@ export function StyleDrawer({ open, onClose }: { open: boolean; onClose: () => v
               }
               label="Interfaces hide attributes (GOST)"
             />
-            <FormControlLabel
-              control={
-                <Switch checked={style.orthogonalEdges} onChange={(e) => set({ orthogonalEdges: e.target.checked })} />
-              }
-              label="Orthogonal edges (90° only)"
-            />
+
+          </Box>
+
+          <Typography variant="subtitle2">Arrows and connections</Typography>
+          <FormControlLabel
+            control={<Switch checked={style.orthogonalEdges} onChange={(e) => set({ orthogonalEdges: e.target.checked })} />}
+            label="Orthogonal edges (90° only)"
+          />
+          <FormControlLabel
+            disabled={!style.orthogonalEdges}
+            control={<Switch checked={style.edgeMergeTargets} onChange={(e) => set({ edgeMergeTargets: e.target.checked })} />}
+            label="Merge arrows at the target"
+          />
+          <FormControlLabel
+            disabled={!style.orthogonalEdges}
+            control={<Switch checked={style.edgeEditable} onChange={(e) => set({ edgeEditable: e.target.checked })} />}
+            label="Edit connection points"
+          />
+          <Typography variant="caption" color="text.secondary">
+            Select an edge, then drag its blue endpoints along any side of its blocks.
+            Endpoints gently snap to 25%, 50% and 75%. Hold Shift to lock to these points.
+            Double-click a handle to restore its automatic position.
+          </Typography>
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
+            {([ ["edgeSourceSide", "Exit side"], ["edgeTargetSide", "Entry side"] ] as const).map(([key, label]) => (
+              <TextField key={key} select size="small" label={label} disabled={!style.orthogonalEdges}
+                value={style[key]} onChange={(e) => set({ [key]: e.target.value })}>
+                {(["top", "bottom", "left", "right"] as const).map((side) => <MenuItem key={side} value={side}>{side}</MenuItem>)}
+              </TextField>
+            ))}
+            {([
+              ["edgeClearance", "Box clearance", 1],
+              ["edgePortSpacing", "Port spacing", 0],
+              ["edgeBendPenalty", "Bend penalty", 0],
+            ] as const).map(([key, label, min]) => (
+              <TextField key={key} size="small" type="number" label={label} value={style[key]}
+                disabled={!style.orthogonalEdges} slotProps={{ htmlInput: { min, max: 200, step: 1 } }}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (Number.isFinite(v) && v >= min && v <= 200) set({ [key]: v });
+                }} />
+            ))}
           </Box>
 
           <Typography variant="subtitle2">Members</Typography>
@@ -209,6 +245,7 @@ export function StyleDrawer({ open, onClose }: { open: boolean; onClose: () => v
           </Box>
           <Stack direction="row" spacing={1}>
             <Button
+              variant="outlined"
               startIcon={<FileUploadIcon />}
               disabled={!backend.available}
               onClick={() => dispatch(importStyle()).catch(fail)}
@@ -216,6 +253,7 @@ export function StyleDrawer({ open, onClose }: { open: boolean; onClose: () => v
               Import
             </Button>
             <Button
+              variant="outlined"
               startIcon={<FileDownloadIcon />}
               disabled={!backend.available}
               onClick={() => dispatch(exportStyle()).catch(fail)}

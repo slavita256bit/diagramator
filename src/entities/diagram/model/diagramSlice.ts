@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Diagram, Note, Point } from "@/shared/types";
+import type { Diagram, Note, Point, RelationAnchors } from "@/shared/types";
 
 export type LoadStatus = "idle" | "loading" | "succeeded" | "failed";
 export type SaveStatus = "saved" | "unsaved" | "saving" | "failed";
@@ -86,6 +86,18 @@ export const diagramSlice = createSlice({
       else cls.methodsCollapsed = !cls.methodsCollapsed;
       state.saveStatus = "unsaved";
     },
+    relationAnchorsChanged(state, action: PayloadAction<{ index: number; anchors?: RelationAnchors }>) {
+      const relation = state.diagram?.relations[action.payload.index];
+      if (!relation) return;
+      relation.anchors = action.payload.anchors;
+      state.saveStatus = "unsaved";
+    },
+    classVisibilityToggled(state, action: PayloadAction<string>) {
+      const cls = state.diagram?.classes.find((c) => c.id === action.payload);
+      if (!cls) return;
+      cls.hidden = !cls.hidden;
+      state.saveStatus = "unsaved";
+    },
     noteAdded(state, action: PayloadAction<Note>) {
       state.diagram?.notes.push(action.payload);
       state.saveStatus = "unsaved";
@@ -151,6 +163,8 @@ export const {
   classesResized,
   diagramArranged,
   sectionCollapseToggled,
+  classVisibilityToggled,
+  relationAnchorsChanged,
   noteAdded,
   noteMoved,
   noteResized,

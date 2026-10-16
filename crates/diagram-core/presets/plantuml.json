@@ -21,6 +21,13 @@
     "badge": "#add1b2"
   },
   "orthogonalEdges": false,
+  "edgeMergeTargets": true,
+  "edgeEditable": false,
+  "edgeClearance": 12,
+  "edgePortSpacing": 20,
+  "edgeBendPenalty": 24,
+  "edgeSourceSide": "top",
+  "edgeTargetSide": "bottom",
   "edgeWidth": 1,
   "arrowSize": 12,
   "edgeDashLength": 6,

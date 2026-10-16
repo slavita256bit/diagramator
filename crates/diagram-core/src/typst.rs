@@ -213,6 +213,14 @@ fn point(p: P, origin: P) -> String {
 }
 
 pub fn render(diagram: &Diagram, style: &StyleProfile) -> String {
+    // Filter before calculating bounds so hidden boxes cannot enlarge the export.
+    let mut visible = diagram.clone();
+    visible.classes.retain(|c| !c.hidden);
+    visible.relations.retain(|r| {
+        visible.classes.iter().any(|c| c.id == r.source)
+            && visible.classes.iter().any(|c| c.id == r.target)
+    });
+    let diagram = &visible;
     let s = style;
     let c = &s.colors;
     let fonts: Vec<String> = s
@@ -336,6 +344,13 @@ pub fn render(diagram: &Diagram, style: &StyleProfile) -> String {
         min.y = min.y.min(r.y);
         max.x = max.x.max(r.x + r.w);
         max.y = max.y.max(r.y + r.h);
+    }
+    // Manual side attachments and obstacle detours can extend beyond all boxes.
+    for p in diagram.relations.iter().flat_map(|r| &r.route) {
+        min.x = min.x.min(p.x - s.arrow_size);
+        min.y = min.y.min(p.y - s.arrow_size);
+        max.x = max.x.max(p.x + s.arrow_size);
+        max.y = max.y.max(p.y + s.arrow_size);
     }
     if diagram.classes.is_empty() && diagram.notes.is_empty() {
         min = P { x: 0.0, y: 0.0 };
@@ -531,6 +546,7 @@ mod tests {
             template_params: Vec::new(),
             attributes_collapsed: false,
             methods_collapsed: false,
+            hidden: false,
             position: Position { x, y, width: 200.0, height: 120.0 },
         };
         let template_class = ClassNode {
@@ -542,6 +558,7 @@ mod tests {
             template_params: vec!["T".into()],
             attributes_collapsed: false,
             methods_collapsed: false,
+            hidden: false,
             position: Position { x: 600.0, y: 0.0, width: 200.0, height: 120.0 },
         };
         Diagram {
@@ -552,13 +569,14 @@ mod tests {
                 template_class,
             ],
             relations: vec![
-                Relation { source: "b".into(), target: "a".into(), kind: RelationType::Realization, route: vec![] },
-                Relation { source: "b".into(), target: "c".into(), kind: RelationType::Composition, route: vec![] },
-                Relation { source: "c".into(), target: "c".into(), kind: RelationType::Aggregation, route: vec![] },
+                Relation { source: "b".into(), target: "a".into(), kind: RelationType::Realization, route: vec![], anchors: None },
+                Relation { source: "b".into(), target: "c".into(), kind: RelationType::Composition, route: vec![], anchors: None },
+                Relation { source: "c".into(), target: "c".into(), kind: RelationType::Aggregation, route: vec![], anchors: None },
                 Relation {
                     source: "c".into(),
                     target: "a".into(),
                     kind: RelationType::Dependency,
+                    anchors: None,
                     // Orthogonal route as the editor's router would produce it.
                     route: vec![
                         crate::ir::Point { x: 400.0, y: 250.0 },
@@ -579,6 +597,49 @@ mod tests {
                 ),
             }],
         }
+    }
+
+    #[test]
+    fn hidden_classes_do_not_affect_export_or_bounds() {
+        let mut d = sample();
+        d.classes[0].hidden = true;
+        d.classes[0].position.x = 100_000.0;
+        let mut expected = d.clone();
+        expected.classes.remove(0);
+        expected.relations.retain(|r| r.source != "a" && r.target != "a");
+        for (_, json) in PRESETS {
+            let style = StyleProfile::from_json(json).unwrap();
+            assert_eq!(render(&d, &style), render(&expected, &style));
+        }
+        // Hiding everything also exports a valid empty diagram.
+        d.notes.clear();
+        for c in &mut d.classes { c.hidden = true; }
+        assert_eq!(render(&d, &StyleProfile::default()), render(&Diagram::default(), &StyleProfile::default()));
+    }
+
+    #[test]
+    fn routed_detours_expand_export_bounds() {
+        let mut d = sample();
+        d.relations[0].route = vec![
+            crate::ir::Point { x: 100.0, y: 250.0 },
+            crate::ir::Point { x: 10_000.0, y: -10_000.0 },
+            crate::ir::Point { x: 100.0, y: 120.0 },
+        ];
+        let out = render(&d, &StyleProfile::default());
+        let dimensions = out.split("let body = box(width: ").nth(1).unwrap();
+        let width: f64 = dimensions.split("pt").next().unwrap().parse().unwrap();
+        let height: f64 = dimensions.split("height: ").nth(1).unwrap().split("pt").next().unwrap().parse().unwrap();
+        assert!(width > 7_500.0 && height > 7_500.0, "detour must fit inside the exported box");
+    }
+
+    #[test]
+    fn old_ir_defaults_to_visible() {
+        let mut value = serde_json::to_value(sample()).unwrap();
+        for c in value["classes"].as_array_mut().unwrap() {
+            c.as_object_mut().unwrap().remove("hidden");
+        }
+        let d: Diagram = serde_json::from_value(value).unwrap();
+        assert!(d.classes.iter().all(|c| !c.hidden));
     }
 
     /// Compiles the output with the real `typst` CLI for every preset; skipped if typst is missing.

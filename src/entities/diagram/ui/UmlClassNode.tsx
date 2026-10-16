@@ -1,9 +1,9 @@
 import { memo, type CSSProperties } from "react";
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Handle, NodeToolbar, Position, type NodeProps } from "@xyflow/react";
 import type { ClassNode, StyleProfile } from "@/shared/types";
 import { cssFontFamily } from "@/shared/config";
 import { useAppDispatch } from "@/shared/model/hooks";
-import { classesResized, sectionCollapseToggled } from "../model/diagramSlice";
+import { classesResized, classVisibilityToggled, sectionCollapseToggled } from "../model/diagramSlice";
 import { formatMethodSignature, isAbstractClass, measureClass, splitVisibility, STEREOTYPE } from "../lib/measure";
 import type { ClassFlowNode } from "../lib/toFlow";
 import "./umlClass.css";
@@ -121,9 +121,14 @@ export const UmlClassNode = memo(function UmlClassNode({ data, selected }: NodeP
     // corners/header fill) — the template corner box is positioned outside the class box's
     // own bounds, so it needs to live outside that clipping boundary or it's invisible.
     <div className="uml-node-root">
+      <NodeToolbar isVisible={selected} position={Position.Top}>
+        <button type="button" className="nodrag nopan" onClick={() => dispatch(classVisibilityToggled(cls.id))}>
+          Hide block
+        </button>
+      </NodeToolbar>
       {/* React Flow needs handles to render edges; FloatingEdge ignores their position. */}
-      <Handle type="target" position={Position.Top} style={{ opacity: 0 }} isConnectable={false} />
-      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} isConnectable={false} />
+      <Handle type="target" position={Position.Bottom} style={{ opacity: 0 }} isConnectable={false} />
+      <Handle type="source" position={Position.Top} style={{ opacity: 0 }} isConnectable={false} />
       {isTemplate && s.templateNotation === "corner" && (
         <div className="uml-template-corner">{cls.templateParams.join(", ")}</div>
       )}

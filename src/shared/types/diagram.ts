@@ -29,6 +29,8 @@ export interface ClassNode {
   templateParams: string[];
   attributesCollapsed: boolean;
   methodsCollapsed: boolean;
+  /** Hidden from the canvas and export, without deleting the class. */
+  hidden?: boolean;
   position: Position;
 }
 
@@ -44,6 +46,17 @@ export interface Note {
   image?: string;
 }
 
+export type AnchorSide = "top" | "bottom" | "left" | "right";
+export interface EdgeAnchor {
+  side: AnchorSide;
+  /** Fraction along the side (0–1), preserved when the block resizes. */
+  offset: number;
+}
+export interface RelationAnchors {
+  source?: EdgeAnchor;
+  target?: EdgeAnchor;
+}
+
 /** `source` is the dependent side (child / whole / user). */
 export interface Relation {
   source: string;
@@ -51,6 +64,7 @@ export interface Relation {
   type: RelationType;
   /** Polyline source border → target border from the edge router; absent = straight line. */
   route?: Point[];
+  anchors?: RelationAnchors;
 }
 
 export interface Point {

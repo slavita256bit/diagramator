@@ -9,6 +9,17 @@
  * Pure module (no imports at runtime) so `routing.test.ts` runs under plain Node.
  */
 
+import type { AnchorSide, EdgeAnchor, RelationAnchors } from "@/shared/types";
+
+export interface RoutingOptions {
+  edgeMergeTargets?: boolean;
+  edgeClearance?: number;
+  edgePortSpacing?: number;
+  edgeBendPenalty?: number;
+  edgeSourceSide?: AnchorSide;
+  edgeTargetSide?: AnchorSide;
+}
+
 export interface Pt {
   x: number;
   y: number;
@@ -21,7 +32,8 @@ export interface Rect {
 }
 export interface RouteInput {
   boxes: Map<string, Rect>;
-  edges: { source: string; target: string }[];
+  edges: { source: string; target: string; type?: string; anchors?: RelationAnchors }[];
+  options?: RoutingOptions;
   orthogonal: boolean;
 }
 
@@ -33,8 +45,6 @@ const LOOP = 36;
 const BEND = 24;
 /** Orthogonal mode: cost multiplier for running along a segment another edge already uses. */
 const SHARED = 3;
-/** Orthogonal mode: cost of leaving/entering through a port another edge already starts from. */
-const PORT_TAKEN = 120;
 const EPS = 0.01;
 
 const inflate = (r: Rect, m: number): Rect => ({ x: r.x - m, y: r.y - m, w: r.w + 2 * m, h: r.h + 2 * m });
@@ -98,7 +108,8 @@ function simplify(pts: Pt[]): Pt[] {
     if (out.length && Math.abs(out[out.length - 1].x - p.x) < EPS && Math.abs(out[out.length - 1].y - p.y) < EPS) continue;
     if (out.length >= 2) {
       const a = out[out.length - 2], b = out[out.length - 1];
-      if (Math.abs((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)) < EPS) out.pop();
+      if (Math.abs((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)) < EPS
+        && (b.x - a.x) * (p.x - b.x) + (b.y - a.y) * (p.y - b.y) >= 0) out.pop();
     }
     out.push(p);
   }
@@ -230,24 +241,93 @@ const DX = [1, -1, 0, 0];
 const DY = [0, 0, 1, -1];
 const OPPOSITE = [1, 0, 3, 2];
 
-/** Side midpoints of `r` with outward direction (index into DX/DY). */
-function ports(r: Rect): { port: Pt; stub: Pt; dir: number }[] {
-  const c = center(r);
-  return [
-    { port: { x: r.x + r.w, y: c.y }, stub: { x: r.x + r.w + MARGIN, y: c.y }, dir: 0 },
-    { port: { x: r.x, y: c.y }, stub: { x: r.x - MARGIN, y: c.y }, dir: 1 },
-    { port: { x: c.x, y: r.y + r.h }, stub: { x: c.x, y: r.y + r.h + MARGIN }, dir: 2 },
-    { port: { x: c.x, y: r.y }, stub: { x: c.x, y: r.y - MARGIN }, dir: 3 },
+/** Find a position on the closest side, stored relative to the box for resizing. */
+export function nearestAnchor(p: Pt, r: Rect): EdgeAnchor {
+  const x = Math.max(r.x, Math.min(r.x + r.w, p.x));
+  const y = Math.max(r.y, Math.min(r.y + r.h, p.y));
+  const candidates: [AnchorSide, number][] = [
+    ["top", Math.hypot(p.x - x, p.y - r.y)], ["bottom", Math.hypot(p.x - x, p.y - r.y - r.h)],
+    ["left", Math.hypot(p.x - r.x, p.y - y)], ["right", Math.hypot(p.x - r.x - r.w, p.y - y)],
   ];
+  candidates.sort((a, b) => a[1] - b[1]);
+  const side = candidates[0][0];
+  const horizontal = side === "top" || side === "bottom";
+  const offset = horizontal ? (p.x - r.x) / r.w : (p.y - r.y) / r.h;
+  return { side, offset: Math.max(0.03, Math.min(0.97, offset)) };
+}
+
+/** A small magnetic zone in screen pixels; Shift locks to the closest quarter point. */
+export function snapAnchor(anchor: EdgeAnchor, r: Rect, zoom: number, force = false): EdgeAnchor {
+  const stops = [0.25, 0.5, 0.75];
+  const stop = stops.reduce((best, value) =>
+    Math.abs(value - anchor.offset) < Math.abs(best - anchor.offset) ? value : best);
+  const length = anchor.side === "top" || anchor.side === "bottom" ? r.w : r.h;
+  // Cap the zone on small boxes so moving freely between stops stays easy.
+  const radius = Math.min(6 / Math.max(zoom, 0.05), length * 0.04);
+  return force || Math.abs(stop - anchor.offset) * length <= radius
+    ? { ...anchor, offset: stop } : anchor;
+}
+
+export function anchorPort(r: Rect, anchor: EdgeAnchor, clearance: number) {
+  const offset = Number.isFinite(anchor.offset) ? Math.max(0, Math.min(1, anchor.offset)) : 0.5;
+  const horizontal = anchor.side === "top" || anchor.side === "bottom";
+  const x = horizontal ? r.x + offset * r.w : anchor.side === "left" ? r.x : r.x + r.w;
+  const y = horizontal ? anchor.side === "top" ? r.y : r.y + r.h : r.y + offset * r.h;
+  const dir = { right: 0, left: 1, bottom: 2, top: 3 }[anchor.side];
+  return { port: { x, y }, stub: { x: x + DX[dir] * clearance, y: y + DY[dir] * clearance }, dir };
+}
+
+/** Order ports along each side. Compatible incoming arrows may share one port. */
+function connectionPorts(input: RouteInput, sourceSide: boolean, clearance: number) {
+  const groups = new Map<string, number[]>();
+  const result: ReturnType<typeof anchorPort>[] = [];
+  const side = (sourceSide ? input.options?.edgeSourceSide : input.options?.edgeTargetSide) ?? (sourceSide ? "top" : "bottom");
+  input.edges.forEach((edge, i) => {
+    const id = sourceSide ? edge.source : edge.target;
+    const manual = sourceSide ? edge.anchors?.source : edge.anchors?.target;
+    if (manual) { result[i] = anchorPort(input.boxes.get(id)!, manual, clearance); return; }
+    const group = groups.get(id) ?? [];
+    group.push(i);
+    groups.set(id, group);
+  });
+  for (const [id, group] of groups) {
+    const r = input.boxes.get(id)!;
+    const horizontal = side === "top" || side === "bottom";
+    const other = (i: number) => center(input.boxes.get(sourceSide ? input.edges[i].target : input.edges[i].source)!);
+    group.sort((a, b) => (horizontal ? other(a).x - other(b).x : other(a).y - other(b).y) || a - b);
+    const bundles: number[][] = [];
+    for (const edge of group) {
+      const existing = !sourceSide && (input.options?.edgeMergeTargets ?? true)
+        ? bundles.find((g) => input.edges[g[0]].type === input.edges[edge].type) : undefined;
+      if (existing) existing.push(edge); else bundles.push([edge]);
+    }
+    const length = horizontal ? r.w : r.h;
+    const span = Math.min(Math.max(0, length - 2 * MARGIN), (bundles.length - 1) * (input.options?.edgePortSpacing ?? 20));
+    bundles.forEach((bundle, rank) => {
+      const offset = 0.5 + (bundles.length > 1 ? span * (rank / (bundles.length - 1) - 0.5) / length : 0);
+      for (const edge of bundle) result[edge] = anchorPort(r, { side, offset }, clearance);
+    });
+  }
+  return result;
 }
 
 function routeOrthogonal(input: RouteInput): Pt[][] {
   const rects = [...input.boxes.values()];
-  const obstacles = rects.map((r) => inflate(r, MARGIN));
-  // Grid lines: inflated borders and centers of every box (covers every port and stub).
-  const uniq = (a: number[]) => [...new Set(a.map((n) => Math.round(n * 100) / 100))].sort((p, q) => p - q);
-  const xs = uniq(obstacles.flatMap((o) => [o.x, o.x + o.w, o.x + o.w / 2]));
-  const ys = uniq(obstacles.flatMap((o) => [o.y, o.y + o.h, o.y + o.h / 2]));
+  const clearance = Math.max(1, input.options?.edgeClearance ?? MARGIN);
+  const bend = Math.max(0, input.options?.edgeBendPenalty ?? BEND);
+  const merge = input.options?.edgeMergeTargets ?? true;
+  const obstacles = rects.map((r) => inflate(r, clearance));
+  const sourcePorts = connectionPorts(input, true, clearance);
+  const targetPorts = connectionPorts(input, false, clearance);
+  const allPorts = [...sourcePorts, ...targetPorts];
+  // Include gap midpoints for balanced elbows between neighbouring layers.
+  const uniq = (a: number[]) => [...new Set(a)].sort((p, q) => p - q);
+  const withMidpoints = (values: number[]) => {
+    const sorted = uniq(values);
+    return uniq([...sorted, ...sorted.slice(1).map((v, i) => (v + sorted[i]) / 2)]);
+  };
+  const xs = withMidpoints([...obstacles.flatMap((o) => [o.x, o.x + o.w]), ...allPorts.map((p) => p.stub.x)]);
+  const ys = withMidpoints([...obstacles.flatMap((o) => [o.y, o.y + o.h]), ...allPorts.map((p) => p.stub.y)]);
   const nx = xs.length, ny = ys.length;
   const idx = (i: number, j: number) => j * nx + i;
   const blockedAt = (p: Pt) => obstacles.some((o) => strictlyInside(p, o));
@@ -261,25 +341,22 @@ function routeOrthogonal(input: RouteInput): Pt[][] {
       if (i + 1 < nx) hOpen[idx(i, j)] = blockedAt({ x: (xs[i] + xs[i + 1]) / 2, y: ys[j] }) ? 0 : 1;
       if (j + 1 < ny) vOpen[idx(i, j)] = blockedAt({ x: xs[i], y: (ys[j] + ys[j + 1]) / 2 }) ? 0 : 1;
     }
-  const find = (a: number[], v: number) => a.indexOf(Math.round(v * 100) / 100);
+  const find = (a: number[], v: number) => a.indexOf(v);
   // Grid segments taken by earlier edges (same indexing as hOpen/vOpen), to spread edges apart.
-  const hUsed = new Uint8Array(nx * ny);
-  const vUsed = new Uint8Array(nx * ny);
-  // Ports used as edge starts: sharing them stacks diamonds/tails on each other.
-  // Converging on a shared target port is fine (UML-style shared arrowhead).
-  const startPorts = new Set<string>();
-  const portKey = (p: Pt) => `${p.x},${p.y}`;
-
-  return input.edges.map(({ source, target }) => {
-    const s = input.boxes.get(source)!, t = input.boxes.get(target)!;
-    if (s === t) return selfLoop(s);
-
-    const starts = ports(s).map((p) => ({ ...p, n: idx(find(xs, p.stub.x), find(ys, p.stub.y)) }));
-    const goals = ports(t).map((p) => ({ ...p, n: idx(find(xs, p.stub.x), find(ys, p.stub.y)) }));
+  const hUsed = new Map<number, Set<string>>();
+  const vUsed = new Map<number, Set<string>>();
+  return input.edges.map((edge, edgeIndex) => {
+    // Share only compatible arrowheads going to the same attachment point.
+    const endpoint = targetPorts[edgeIndex].port;
+    const bundle = `${edge.target}:${edge.type ?? ""}:${endpoint.x}:${endpoint.y}`;
+    const onGrid = (p: typeof sourcePorts[number]) => ({ ...p, n: idx(find(xs, p.stub.x), find(ys, p.stub.y)) });
+    const starts = [onGrid(sourcePorts[edgeIndex])];
+    const goals = [onGrid(targetPorts[edgeIndex])];
+    const middleY = (starts[0].stub.y + goals[0].stub.y) / 2;
     const goalOf = new Map(goals.filter((g) => free[g.n]).map((g) => [g.n, g]));
     const h = (n: number) => {
       const x = xs[n % nx], y = ys[Math.floor(n / nx)];
-      return Math.min(...goals.map((g) => Math.abs(g.stub.x - x) + Math.abs(g.stub.y - y)));
+      return Math.min(...goals.map((g) => Math.abs(g.stub.x - x) + Math.abs(g.stub.y - y))) * (merge ? 0.65 : 1);
     };
 
     // State = node * 4 + direction of travel.
@@ -289,7 +366,7 @@ function routeOrthogonal(input: RouteInput): Pt[][] {
     for (const st of starts) {
       if (!free[st.n]) continue;
       const k = st.n * 4 + st.dir;
-      g[k] = MARGIN + (startPorts.has(portKey(st.port)) ? PORT_TAKEN : 0);
+      g[k] = clearance;
       heap.push(g[k] + h(st.n), k);
     }
     let best = Infinity, bestState = -1;
@@ -299,10 +376,10 @@ function routeOrthogonal(input: RouteInput): Pt[][] {
       const n = k >> 2, d = k & 3, cost = g[k];
       if (f > cost + h(n) + EPS) continue; // stale entry
       const goal = goalOf.get(n);
-      if (goal) {
+      if (goal && d !== goal.dir) {
         // Final hop goes into the box, against the goal's outward direction.
         const total =
-          cost + MARGIN + (d === OPPOSITE[goal.dir] ? 0 : BEND) + (startPorts.has(portKey(goal.port)) ? PORT_TAKEN : 0);
+          cost + clearance + (d === OPPOSITE[goal.dir] ? 0 : bend);
         if (total < best) {
           best = total;
           bestState = k;
@@ -319,8 +396,11 @@ function routeOrthogonal(input: RouteInput): Pt[][] {
         if (!(horizontal ? hOpen : vOpen)[seg] || !free[m]) continue;
         const nk = m * 4 + nd;
         const len = Math.abs(xs[ni] - xs[i]) + Math.abs(ys[nj] - ys[j]);
-        const shared = (horizontal ? hUsed : vUsed)[seg] ? SHARED : 1;
-        const ng = cost + len * shared + (nd === d ? 0 : BEND);
+        const used = (horizontal ? hUsed : vUsed).get(seg);
+        const shared = used ? merge && used.has(bundle) ? 0.65 : SHARED : 1;
+        // Break equal-length ties in favour of an elbow midway between the blocks.
+        const balance = horizontal ? len * Math.abs(ys[j] - middleY) * 0.001 : 0;
+        const ng = cost + len * shared + (nd === d ? 0 : bend) + balance;
         if (ng < g[nk]) {
           g[nk] = ng;
           prev[nk] = k;
@@ -328,20 +408,29 @@ function routeOrthogonal(input: RouteInput): Pt[][] {
         }
       }
     }
-    if (bestState < 0) return straightLine(s, t);
+    if (bestState < 0) {
+      // Overlapping boxes can block the mandatory ports. Keep right-angle geometry
+      // and the requested endpoint directions even when clearance is impossible.
+      const start = sourcePorts[edgeIndex], goal = targetPorts[edgeIndex];
+      const outside = Math.max(...rects.map((r) => r.x + r.w)) + 2 * MARGIN;
+      return simplify([start.port, start.stub, { x: outside, y: start.stub.y },
+        { x: outside, y: goal.stub.y }, goal.stub, goal.port]);
+    }
 
     const nodes: Pt[] = [];
     let k = bestState;
     for (; prev[k] >= 0; k = prev[k]) {
       nodes.unshift({ x: xs[(k >> 2) % nx], y: ys[Math.floor((k >> 2) / nx)] });
       const a = k >> 2, b = prev[k] >> 2; // one grid step
-      if (Math.abs(a - b) === 1) hUsed[Math.min(a, b)] = 1;
-      else vUsed[Math.min(a, b)] = 1;
+      const used = Math.abs(a - b) === 1 ? hUsed : vUsed;
+      const segment = Math.min(a, b);
+      const bundles = used.get(segment) ?? new Set<string>();
+      bundles.add(bundle);
+      used.set(segment, bundles);
     }
     nodes.unshift({ x: xs[(k >> 2) % nx], y: ys[Math.floor((k >> 2) / nx)] });
     const start = starts.find((st) => st.n === k >> 2 && st.dir === (k & 3))!;
     const goal = goalOf.get(bestState >> 2)!;
-    startPorts.add(portKey(start.port));
     return simplify([start.port, ...nodes, goal.port]);
   });
 }

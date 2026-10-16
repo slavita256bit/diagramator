@@ -57,10 +57,30 @@ pub enum ToolSource {
     System,
 }
 
+/// Older Windows updates copied only doxygen.exe; skip those broken overrides.
+fn runtime_available(binary: &Path, tool: Tool, windows: bool) -> bool {
+    !windows || !matches!(tool, Tool::Doxygen)
+        || binary.parent().is_some_and(|dir| dir.join("libclang.dll").is_file())
+}
+
+/// Preserve every DLL supplied beside a Windows executable (Doxygen needs libclang).
+fn copy_runtime_files(binary: &Path, dest_dir: &Path, windows: bool) -> Result<(), String> {
+    if !windows { return Ok(()); }
+    let parent = binary.parent().ok_or("tool has no parent directory")?;
+    for entry in std::fs::read_dir(parent).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        let path = entry.path();
+        if path.is_file() && path.extension().and_then(|ext| ext.to_str()).is_some_and(|ext| ext.eq_ignore_ascii_case("dll")) {
+            std::fs::copy(&path, dest_dir.join(entry.file_name())).map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
 fn locate(app: &AppHandle, tool: Tool) -> (PathBuf, ToolSource) {
     if let Ok(dir) = app.path().app_data_dir() {
         let p = dir.join("tools").join(tool.file_name());
-        if p.is_file() {
+        if p.is_file() && runtime_available(&p, tool, cfg!(windows)) {
             return (p, ToolSource::Updated);
         }
     }
@@ -69,7 +89,7 @@ fn locate(app: &AppHandle, tool: Tool) -> (PathBuf, ToolSource) {
         .and_then(|e| e.parent().map(Path::to_path_buf))
     {
         let p = dir.join(tool.bundled_file_name());
-        if p.is_file() {
+        if p.is_file() && runtime_available(&p, tool, cfg!(windows)) {
             return (p, ToolSource::Bundled);
         }
     }
@@ -228,9 +248,19 @@ pub async fn update_tool(app: &AppHandle, name: &str) -> Result<ToolStatus, Stri
         .or_else(|| find_binary(&extract_dir, tool.name()))
         .ok_or_else(|| format!("could not find {name} inside {asset_name}"))?;
 
+    if !runtime_available(&found, tool, cfg!(windows)) {
+        return Err(format!("{asset_name} is missing libclang.dll; keeping the installed tool"));
+    }
+    // Validate the complete extracted distribution before replacing the installed copy.
+    let probe = Command::new(&found).arg("--version").output().map_err(|e| e.to_string())?;
+    if !probe.status.success() {
+        return Err(format!("downloaded {name} cannot run ({}); keeping the installed tool", probe.status));
+    }
+
     let tools_dir = app.path().app_data_dir().map_err(|e| e.to_string())?.join("tools");
     std::fs::create_dir_all(&tools_dir).map_err(|e| e.to_string())?;
     let dest = tools_dir.join(tool.file_name());
+    copy_runtime_files(&found, &tools_dir, cfg!(windows))?;
     std::fs::copy(&found, &dest).map_err(|e| format!("{}: {e}", dest.display()))?;
     #[cfg(unix)]
     {
@@ -286,6 +316,30 @@ fn find_binary(dir: &Path, name: &str) -> Option<PathBuf> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn windows_runtime_is_copied_and_incomplete_doxygen_is_rejected() {
+        let root = std::env::temp_dir().join(format!("diagramator-runtime-test-{}", std::process::id()));
+        let source = root.join("source");
+        let dest = root.join("installed");
+        std::fs::create_dir_all(&source).unwrap();
+        std::fs::create_dir_all(&dest).unwrap();
+        let binary = source.join("doxygen.exe");
+        std::fs::write(&binary, b"exe").unwrap();
+        assert!(!runtime_available(&binary, Tool::Doxygen, true));
+        assert!(runtime_available(&binary, Tool::Doxygen, false));
+        assert!(runtime_available(&binary, Tool::Typst, true));
+        std::fs::write(source.join("libclang.dll"), b"clang").unwrap();
+        std::fs::write(source.join("extra.DLL"), b"runtime").unwrap();
+        std::fs::write(source.join("doxywizard.exe"), b"unused").unwrap();
+        assert!(runtime_available(&binary, Tool::Doxygen, true));
+        copy_runtime_files(&binary, &dest, true).unwrap();
+        assert_eq!(std::fs::read(dest.join("libclang.dll")).unwrap(), b"clang");
+        assert_eq!(std::fs::read(dest.join("extra.DLL")).unwrap(), b"runtime");
+        assert!(!dest.join("doxywizard.exe").exists());
+        assert!(runtime_available(&dest.join("doxygen.exe"), Tool::Doxygen, true));
+        std::fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn version_from_tag_strips_prefixes() {

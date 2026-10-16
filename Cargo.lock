@@ -624,7 +624,7 @@ dependencies = [
 
 [[package]]
 name = "diagram-core"
-version = "0.1.0"
+version = "0.4.6"
 dependencies = [
  "base64 0.22.1",
  "roxmltree",
@@ -636,7 +636,7 @@ dependencies = [
 
 [[package]]
 name = "diagramator"
-version = "0.1.0"
+version = "0.4.6"
 dependencies = [
  "diagram-core",
  "reqwest 0.12.28",

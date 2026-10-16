@@ -1,4 +1,4 @@
-import type { Diagram } from "./diagram";
+import type { Diagram, RelationAnchors, RelationType } from "./diagram";
 import type { StyleProfile } from "./style";
 
 /** `diagramator.json` — mirrors `crates/diagram-core/src/project.rs`. */
@@ -10,6 +10,8 @@ export interface ProjectFile {
   style: StyleProfile | null;
   positions: Record<string, { x: number; y: number }>;
   collapsed: Record<string, { attributes: boolean; methods: boolean }>;
+  hidden?: Record<string, boolean>;
+  connections?: { source: string; target: string; type: RelationType; anchors: RelationAnchors }[];
   notes: Diagram["notes"];
 }
 

@@ -256,6 +256,7 @@ fn build_diagram(compounds: Vec<Compound>) -> Diagram {
             target,
             kind,
             route: Vec::new(),
+            anchors: None,
         })
         .collect();
 
@@ -270,6 +271,7 @@ fn build_diagram(compounds: Vec<Compound>) -> Diagram {
             template_params: c.template_params,
             attributes_collapsed: false,
             methods_collapsed: false,
+            hidden: false,
             position: Position::default(),
         })
         .collect();

@@ -2,7 +2,9 @@ import { createListenerMiddleware, isAnyOf } from "@reduxjs/toolkit";
 import {
   classesResized,
   classMoved,
-  computeRoutes,
+  classVisibilityToggled,
+  relationAnchorsChanged,
+  computeRoutesAsync,
   diagramArranged,
   loadSucceeded,
   routesUpdated,
@@ -14,12 +16,18 @@ import type { AppDispatch, RootState } from "./index";
 export const routing = createListenerMiddleware();
 
 routing.startListening.withTypes<RootState, AppDispatch>()({
-  matcher: isAnyOf(loadSucceeded, classMoved, classesResized, diagramArranged, styleSet),
+  matcher: isAnyOf(relationAnchorsChanged, classVisibilityToggled, loadSucceeded, classMoved, classesResized, diagramArranged, styleSet),
   effect: async (_, api) => {
     // Coalesce bursts (multi-node drags dispatch one classMoved per node).
     api.cancelActiveListeners();
     await api.delay(0);
     const { diagram } = api.getState().diagram;
-    if (diagram) api.dispatch(routesUpdated(computeRoutes(diagram, api.getState().settings.style.orthogonalEdges)));
+    if (!diagram) return;
+    try {
+      const routes = await computeRoutesAsync(diagram, api.getState().settings.style, api.signal);
+      if (!api.signal.aborted) api.dispatch(routesUpdated(routes));
+    } catch (error) {
+      if (!api.signal.aborted) throw error;
+    }
   },
 });

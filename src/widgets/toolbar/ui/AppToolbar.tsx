@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { AppBar, Box, IconButton, Toolbar, Tooltip, Typography } from "@mui/material";
-import DarkModeIcon from "@mui/icons-material/DarkMode";
-import LightModeIcon from "@mui/icons-material/LightMode";
 import PaletteIcon from "@mui/icons-material/Palette";
+import { BlockVisibilityButton } from "@/features/block-visibility";
 import { AddNoteButton } from "@/features/add-note";
 import { AppUpdateDialog } from "@/features/app-update";
 import { AutoArrangeButton } from "@/features/auto-arrange";
@@ -12,13 +11,11 @@ import { SaveButton } from "@/features/save-project";
 import { AnalyzeButtons, RecentMenu } from "@/features/analyze-project";
 import { ToolStatusChips } from "@/features/tool-status";
 import { selectSource } from "@/entities/diagram";
-import { selectThemeMode, themeToggled } from "@/entities/settings";
-import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
+import { ThemeMenu } from "@/features/switch-theme";
+import { useAppSelector } from "@/shared/model/hooks";
 
 export function AppToolbar() {
-  const dispatch = useAppDispatch();
   const source = useAppSelector(selectSource);
-  const mode = useAppSelector(selectThemeMode);
   const [styleOpen, setStyleOpen] = useState(false);
   return (
     <AppBar position="static" elevation={0}>
@@ -46,16 +43,13 @@ export function AppToolbar() {
         <Box sx={{ flexShrink: 0 }}>
           <AutoArrangeButton />
           <AddNoteButton />
+          <BlockVisibilityButton />
           <Tooltip title="Diagram style">
             <IconButton color="inherit" onClick={() => setStyleOpen(true)}>
               <PaletteIcon />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Toggle theme">
-            <IconButton color="inherit" onClick={() => dispatch(themeToggled())}>
-              {mode === "dark" ? <LightModeIcon /> : <DarkModeIcon />}
-            </IconButton>
-          </Tooltip>
+          <ThemeMenu />
         </Box>
       </Toolbar>
       <StyleDrawer open={styleOpen} onClose={() => setStyleOpen(false)} />

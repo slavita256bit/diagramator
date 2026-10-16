@@ -25,6 +25,9 @@ source dir → `doxygen` (XML) → `doxygen::parse_xml_dir` → `layout::auto_la
 `templateParams`: generic/template parameter names (GOST fig 4.5 / PlantUML `template<...>`),
 parsed from Doxygen's `templateparamlist` (`doxygen/parser.rs`) but kept out of `name` —
 rendering (corner box vs. header row vs. none) is a style choice, see below.
+`hidden`: optional per-class boolean (default false); hides a class and incident relations
+from the canvas, routing obstacles, and Typst export without removing its data or position.
+Select a class to hide it; the toolbar visibility list restores it.
 `notes`: freestanding comment boxes (not from Doxygen); optionally linked to one class with
 a dashed connector. Round-trip through `diagramator.json` like positions, not through Doxygen.
 
@@ -67,10 +70,10 @@ self-loop arrows already do.
 ## Project file
 `diagramator.json` in the analyzed source folder (`crates/diagram-core/src/project.rs`):
 `{ version, output: "diagram.typ", autoExport: true, style: <full profile>,
-positions: {id: {x, y}}, collapsed: {id: {attributes, methods}}, notes: [...] }`.
+positions: {id: {x, y}}, hidden: {id: boolean}, collapsed: {id: {attributes, methods}}, notes: [...] }`.
 Opening a folder applies saved positions/collapse state (by Doxygen refid) and restores
 notes verbatim (they aren't Doxygen-sourced, so there's nothing to id-match them against).
-Saves: Ctrl+S, Save button, and autosave 800 ms after drags/style edits/collapse/notes
+Saves: Ctrl+S, Save button, and autosave 800 ms after drags/style edits/collapse/visibility/notes
 (`src/app/store/autosave.ts`). Each save rewrites the Typst `output` when `autoExport` is on.
 Positions/collapse state of classes that disappeared from the sources are kept.
 
@@ -78,9 +81,21 @@ Positions/collapse state of classes that disappeared from the sources are kept.
 `routing.ts` computes every edge's polyline so edges don't cross class boxes:
 straight mode = direct line if clear, else shortest path over box corners;
 orthogonal mode (style `orthogonalEdges`) = A* on a grid from box borders with bend,
-shared-segment and shared-start-port penalties. Runs in a store listener
-(`src/app/store/routing.ts`) after load, drop, resize and style changes; while dragging,
-edges of the dragged node show a live straight line. Routes are saved in the IR and
+shared-segment penalties. Orthogonal relations leave the source top and enter the target
+bottom, including self-loops. Multiple connections use ports ordered by the other endpoint's position.
+`edgeMergeTargets` shares a trunk and endpoint for compatible incoming arrows (enabled
+by default); disabling it separates the ports. Source/target sides, box clearance,
+port spacing and bend penalty are configurable. The same router runs while moving boxes.
+`edgeEditable` enables blue endpoint handles on a selected orthogonal relation. Dragging
+snaps to a block side and records `anchors: {source?, target?}` with `{side, offset}`;
+offset is a fraction along the side, so resizing keeps the attachment. Double-clicking a
+handle restores automatic placement. Dragged endpoints gently snap to 25%, 50% and 75%
+of a side (up to 6 screen pixels, capped at 4% of side length); Shift locks to the nearest
+of these stops. Project `connections` restores anchors by source,
+target and relation type after Doxygen analysis. Typst draws the resulting route verbatim
+and includes route extents in its bounds. Runs in a store listener
+(`src/app/store/routing.ts`) after load, drop, resize and style changes. During dragging,
+the same routing geometry is recomputed asynchronously for the current node positions. Routes are saved in the IR and
 exported to Typst as-is.
 
 ## Recent projects & examples
@@ -92,7 +107,7 @@ reopens on start. `examples/` is bundled as a Tauri resource and copied to
 Tag `v*` → `.github/workflows/release.yml` builds installers for all platforms via
 `tauri-apps/tauri-action`, after `scripts/fetch-sidecars.mjs` downloads pinned
 `doxygen`/`typst` releases into `src-tauri/binaries/` for that job's target triple.
-`bundle.externalBin` is injected with `--config` at that point only — not in
+`bundle.externalBin` is injected using the generated `binaries/sidecars.conf.json` at that point only — not in
 `tauri.conf.json` — since Tauri checks the sidecar files exist at build time, and they
 aren't committed (`cargo check`/`pnpm tauri dev` keep using `PATH`).
 In-app updaters: `tools::check_updates`/`update_tool` (GitHub releases API + sha256
@@ -100,3 +115,20 @@ verification) refresh doxygen/typst into `<app data>/tools/`; `tauri-plugin-upda
 (`AppUpdateDialog`) self-updates Diagramator from the same release's signed
 `latest.json`. Third-party licenses (doxygen GPL-2.0, typst Apache-2.0) ship under
 `licenses/` in the bundle, from `/THIRD_PARTY_LICENSES/`.
+
+## Background routing and app themes
+`computeRoutesAsync` sends visible boxes, manual anchors, relation kinds and routing options
+to `routing.worker.ts`. A single-flight queue drops cancelled drag requests before they reach
+the worker; stale results never update the canvas or store. Worker startup/runtime failures
+fall back to the same synchronous router. Save and export await geometry for their snapshot.
+The canvas uses asynchronous routing while dragging, keeping the same merged connections.
+
+App themes (Light, Dark, Nord, Solarized) live in `shared/config/themes.ts`, selected through
+the toolbar menu and persisted as `diagramator.theme`. They style the app chrome and a light
+canvas background; diagram/profile colors and Typst output are independent of the app theme.
+
+Windows Doxygen requires the `libclang.dll` supplied in its official binary archive.
+The sidecar fetch script preserves sibling DLLs and the generated Tauri resource mapping
+installs them next to the EXE. CI probes both version and XML generation with LLVM removed
+from PATH. The tool updater copies those DLLs too and validates the extracted tool before
+replacing it. Lookup skips incomplete Windows Doxygen overrides created by older updates.

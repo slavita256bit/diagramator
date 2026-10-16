@@ -6,7 +6,7 @@ export type ClassFlowNode = Node<{ cls: ClassNode; style: StyleProfile }, "umlCl
 export type NoteFlowNode = Node<{ note: Note }, "umlNote">;
 
 export function toFlowNodes(diagram: Diagram, style: StyleProfile): ClassFlowNode[] {
-  return diagram.classes.map((cls) => ({
+  return diagram.classes.filter((c) => !c.hidden).map((cls) => ({
     id: cls.id,
     type: "umlClass",
     position: { x: cls.position.x, y: cls.position.y },
@@ -45,9 +45,11 @@ const EDGE_STYLES: Record<RelationType, EdgeStyle> = {
 
 export function toFlowEdges(diagram: Diagram, style: StyleProfile): Edge[] {
   const dash = `${style.edgeDashLength} ${style.edgeDashGap}`;
-  return diagram.relations.map((rel: Relation) => {
+  const visible = new Set(diagram.classes.filter((c) => !c.hidden).map((c) => c.id));
+  return diagram.relations.flatMap((rel: Relation, index) => {
+    if (!visible.has(rel.source) || !visible.has(rel.target)) return [];
     const edgeStyle = EDGE_STYLES[rel.type];
-    return {
+    return [{
       id: `${rel.source}->${rel.target}:${rel.type}`,
       source: rel.source,
       target: rel.target,
@@ -55,8 +57,9 @@ export function toFlowEdges(diagram: Diagram, style: StyleProfile): Edge[] {
       markerStart: edgeStyle.markerStart,
       markerEnd: edgeStyle.markerEnd,
       style: { strokeDasharray: edgeStyle.dashed ? dash : undefined },
-      data: { relation: rel.type, route: rel.route },
-    };
+      data: { relation: rel.type, route: rel.route, anchors: rel.anchors, relationIndex: index,
+        orthogonal: style.orthogonalEdges, editable: style.edgeEditable, routingOptions: style },
+    }];
   });
 }
 
@@ -64,7 +67,7 @@ export function toFlowEdges(diagram: Diagram, style: StyleProfile): Edge[] {
 export function toFlowNoteEdges(diagram: Diagram, style: StyleProfile): Edge[] {
   const dash = `${style.edgeDashLength} ${style.edgeDashGap}`;
   return diagram.notes
-    .filter((n) => n.linkedClass)
+    .filter((n) => n.linkedClass && diagram.classes.some((c) => c.id === n.linkedClass && !c.hidden))
     .map((n) => ({
       id: `note:${n.id}->${n.linkedClass}`,
       source: n.id,

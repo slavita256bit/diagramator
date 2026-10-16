@@ -4,6 +4,7 @@ name: release
 # `bundle.externalBin` isn't in tauri.conf.json (it'd break `cargo check`/`pnpm tauri dev`
 # for everyone, since Tauri checks those files exist at build time) — it's injected here,
 # after scripts/fetch-sidecars.mjs has downloaded doxygen/typst for this job's target.
+# Its generated config also bundles Doxygen's Windows runtime DLLs.
 # Sidecars are named "diagramator-doxygen"/"diagramator-typst", not plain "doxygen"/"typst":
 # Linux packaging installs externalBin next to the main executable, i.e. straight into
 # /usr/bin, where a plain "doxygen" collides with the system doxygen package.
@@ -65,6 +66,9 @@ jobs:
 
       - run: pnpm install
 
+      - name: test sidecar packaging helpers
+        run: node --test scripts/sidecar-files.test.mjs
+
       - name: fetch doxygen/typst sidecars
         run: node scripts/fetch-sidecars.mjs --triple ${{ matrix.target }}
 
@@ -78,4 +82,4 @@ jobs:
           releaseName: "Diagramator ${{ github.ref_name }}"
           releaseDraft: true
           prerelease: false
-          args: '--config {"bundle":{"externalBin":["binaries/diagramator-doxygen","binaries/diagramator-typst"]}} ${{ matrix.args }}'
+          args: '--config src-tauri/binaries/sidecars.conf.json ${{ matrix.args }}'

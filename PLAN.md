@@ -80,6 +80,9 @@ Done so far:
 - `onlyRenderVisibleElements`, MiniMap off by default (toggle in Controls), stable drag handler.
 - Linux: `WEBKIT_DISABLE_DMABUF_RENDERER=1` was forced on every machine — it pushes WebKitGTK
   to a slow, software-heavy rendering path. Now only on NVIDIA or with `DIAGRAMATOR_DISABLE_DMABUF=1`.
+- Routing now uses a Web Worker with cancellation for obsolete drag frames and a synchronous
+  fallback. Save/export await current geometry; no fresh WebKitGTK timing claim yet.
+- App themes: Light, Dark, Nord, Solarized, with a persisted toolbar picker and a light canvas.
 Next if still slow: profile in WebKit inspector (right click → Inspect in `pnpm tauri dev`);
 suspects: edge re-renders on drag (FloatingEdge per frame), dotted Background, box-shadow.
 

@@ -17,6 +17,7 @@ import { Box, Typography } from "@mui/material";
 import MapIcon from "@mui/icons-material/Map";
 import {
   classMoved,
+  computeRoutesAsync,
   FloatingEdge,
   noteMoved,
   selectDiagram,
@@ -31,7 +32,8 @@ import {
   type ClassFlowNode,
   type NoteFlowNode,
 } from "@/entities/diagram";
-import { selectStyle } from "@/entities/settings";
+import { APP_THEMES } from "@/shared/config";
+import { selectStyle, selectTheme } from "@/entities/settings";
 import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
 
 const nodeTypes: NodeTypes = { umlClass: UmlClassNode, umlNote: UmlNoteNode };
@@ -41,6 +43,7 @@ export function DiagramCanvas() {
   const dispatch = useAppDispatch();
   const diagram = useAppSelector(selectDiagram);
   const style = useAppSelector(selectStyle);
+  const canvasTheme = APP_THEMES[useAppSelector(selectTheme)];
   const vars = useMemo(() => styleVars(style), [style]);
   // MiniMap re-renders on every drag frame; off by default (costly in WebKitGTK).
   const [miniMap, setMiniMap] = useState(false);
@@ -70,7 +73,7 @@ export function DiagramCanvas() {
     ? diagram.classes
         .map(
           (c) =>
-            `${c.id}:${c.position.x}:${c.position.y}:${c.position.width}:${c.position.height}:${c.attributesCollapsed}:${c.methodsCollapsed}`,
+            `${c.id}:${c.position.x}:${c.position.y}:${c.position.width}:${c.position.height}:${c.attributesCollapsed}:${c.methodsCollapsed}:${c.hidden}`,
         )
         .join("|") +
       "#" +
@@ -85,10 +88,31 @@ export function DiagramCanvas() {
   // Edges follow the router's output (relations change only when routes are recomputed) and
   // note links (which don't need routing — a note connector is always a plain line).
   const relations = diagram?.relations;
+  const liveMovement = nodes.some((n) => n.dragging)
+    ? nodes.map((n) => `${n.id}:${n.position.x}:${n.position.y}`).join("|") : "";
+  const visibility = diagram?.classes.map((c) => `${c.id}:${c.hidden}`).join("|");
   const noteLinks = diagram?.notes.map((n) => n.linkedClass).join("|");
   useEffect(() => {
-    if (diagram) setEdges([...toFlowEdges(diagram, style), ...toFlowNoteEdges(diagram, style)]);
-  }, [relations, noteLinks, style, setEdges]);
+    if (!diagram) return;
+    const updateEdges = (display: typeof diagram) => {
+      setEdges((previous) => [...toFlowEdges(display, style), ...toFlowNoteEdges(display, style)].map((edge) => ({
+        ...edge, selected: previous.find((e) => e.id === edge.id)?.selected,
+        data: { ...edge.data, live: !!liveMovement },
+      })));
+    };
+    if (!liveMovement) { updateEdges(diagram); return; }
+    const positions = new Map(nodes.map((n) => [n.id, n.position]));
+    const display = { ...diagram, classes: diagram.classes.map((c) => ({ ...c,
+      position: { ...c.position, ...positions.get(c.id) } })) };
+    const controller = new AbortController();
+    void computeRoutesAsync(display, style, controller.signal).then((routes) => {
+      if (!controller.signal.aborted) updateEdges({ ...display,
+        relations: display.relations.map((r, i) => ({ ...r, route: routes[i] })) });
+    }).catch((error: unknown) => {
+      if (!controller.signal.aborted) console.error("Live routing failed", error);
+    });
+    return () => controller.abort();
+  }, [relations, noteLinks, visibility, style, setEdges, liveMovement]);
 
   if (!diagram) {
     return (
@@ -106,7 +130,7 @@ export function DiagramCanvas() {
   }
 
   return (
-    <Box sx={{ flex: 1, minHeight: 0 }} style={vars}>
+    <Box sx={{ flex: 1, minHeight: 0, bgcolor: canvasTheme.canvas }} style={vars}>
       <UmlMarkers size={style.arrowSize} />
       <ReactFlow
         key={diagramKey}
@@ -128,7 +152,7 @@ export function DiagramCanvas() {
         fitView
         fitViewOptions={{ padding: 0.2 }}
       >
-        <Background />
+        <Background color={canvasTheme.canvasDots} />
         <Controls>
           <ControlButton title="Toggle minimap" onClick={() => setMiniMap((v) => !v)}>
             <MapIcon />

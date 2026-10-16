@@ -1,25 +1,31 @@
 import { useMemo, type ReactNode } from "react";
 import { Provider } from "react-redux";
 import { CssBaseline, ThemeProvider, createTheme } from "@mui/material";
-import { selectThemeMode } from "@/entities/settings";
+import { selectTheme } from "@/entities/settings";
 import { useAppSelector } from "@/shared/model/hooks";
+import { APP_THEMES, type AppTheme } from "@/shared/config";
 import { store } from "../store";
 
 function ThemedApp({ children }: { children: ReactNode }) {
-  const mode = useAppSelector(selectThemeMode);
+  const themeId = useAppSelector(selectTheme);
+  const colors: AppTheme = APP_THEMES[themeId];
   const theme = useMemo(
     () =>
       createTheme({
-        // `primary` is used as plain text color too (e.g. text-variant buttons), so it needs
-        // a lighter shade in dark mode — the light-mode navy is nearly invisible on a dark
-        // background otherwise.
         palette: {
-          mode,
-          primary: { main: mode === "dark" ? "#6fa8e0" : "#1e3a5f" },
-          secondary: { main: "#f2a541" },
+          mode: colors.mode,
+          primary: { main: colors.primary },
+          secondary: { main: colors.secondary },
+          background: { default: colors.background, paper: colors.paper },
+          ...(colors.text ? { text: { primary: colors.text } } : {}),
+        },
+        components: {
+          MuiAppBar: { styleOverrides: { root: {
+            backgroundColor: colors.appBar, color: "#fff", backgroundImage: "none",
+          } } },
         },
       }),
-    [mode],
+    [colors],
   );
   return (
     <ThemeProvider theme={theme}>

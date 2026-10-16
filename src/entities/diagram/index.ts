@@ -8,6 +8,8 @@ export {
   classesResized,
   diagramArranged,
   sectionCollapseToggled,
+  classVisibilityToggled,
+  relationAnchorsChanged,
   noteAdded,
   noteMoved,
   noteResized,
@@ -33,5 +35,5 @@ export { UmlMarkers } from "./ui/UmlMarkers";
 export { FloatingEdge } from "./ui/FloatingEdge";
 export { measureClass, formatMethodSignature, splitVisibility } from "./lib/measure";
 export { sizeDiagram } from "./lib/sized";
-export { computeRoutes } from "./lib/computeRoutes";
+export { computeRoutes, computeRoutesAsync } from "./lib/computeRoutes";
 export { styleVars } from "./ui/UmlClassNode";

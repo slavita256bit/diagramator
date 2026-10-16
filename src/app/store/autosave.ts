@@ -11,6 +11,8 @@ import {
   noteResized,
   noteTextChanged,
   sectionCollapseToggled,
+  classVisibilityToggled,
+  relationAnchorsChanged,
 } from "@/entities/diagram";
 import { saveProject } from "@/features/save-project";
 import type { AppDispatch, RootState } from "./index";
@@ -26,6 +28,8 @@ autosave.startListening.withTypes<RootState, AppDispatch>()({
     classesResized,
     diagramArranged,
     sectionCollapseToggled,
+    classVisibilityToggled,
+    relationAnchorsChanged,
     noteAdded,
     noteMoved,
     noteResized,

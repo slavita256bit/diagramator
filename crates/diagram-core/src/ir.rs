@@ -33,6 +33,9 @@ pub struct ClassNode {
     pub attributes_collapsed: bool,
     #[serde(default)]
     pub methods_collapsed: bool,
+    /// Omit this class and its relations from presentation and export.
+    #[serde(default)]
+    pub hidden: bool,
     pub position: Position,
 }
 
@@ -66,6 +69,31 @@ pub struct Relation {
     /// router (`src/entities/diagram/lib/routing.ts`). Empty = straight line (exporter fallback).
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub route: Vec<Point>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchors: Option<RelationAnchors>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AnchorSide {
+    Top,
+    Bottom,
+    Left,
+    Right,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct EdgeAnchor {
+    pub side: AnchorSide,
+    pub offset: f64,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct RelationAnchors {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<EdgeAnchor>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target: Option<EdgeAnchor>,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
