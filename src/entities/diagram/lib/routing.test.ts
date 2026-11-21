@@ -119,6 +119,21 @@ test("orthogonal: merged incoming arrows share a final trunk even at rest", () =
   }
 });
 
+test("orthogonal: moving a distant box does not shift an unobstructed inheritance trunk", () => {
+  const nodes = new Map<string, Rect>([
+    ["base", { x: 580, y: 16, w: 300, h: 184 }],
+    ["left", { x: 455, y: 263, w: 250, h: 238 }],
+    ["right", { x: 735, y: 265, w: 338, h: 236 }],
+    ["other", { x: 60, y: 254, w: 360, h: 235 }],
+  ]);
+  const edges = [{ source: "left", target: "base", type: "inheritance" },
+    { source: "right", target: "base", type: "inheritance" }];
+  const route = () => routeEdges({ boxes: nodes, edges, orthogonal: true });
+  const before = route();
+  nodes.set("other", { ...nodes.get("other")!, y: 240 });
+  assert.deepEqual(route(), before);
+});
+
 test("orthogonal: manual side attachments override defaults and follow box resizing", () => {
   const source = { x: 0.123, y: 0.456, w: 120, h: 90 };
   const target = { x: 360, y: 0, w: 120, h: 90 };

@@ -77,7 +77,7 @@ export function prepareRelease(root, version) {
   versions(files); // Validate every edit before writing anything.
   for (const file of VERSION_FILES) writeFileSync(join(root, file), files[file]);
   git(root, ["add", "--", ...VERSION_FILES]);
-  return `Prepared ${version}; staged version files only.\nReview all intended changes (including workflow changes) and commit them yourself in CLion.\nThen run: pnpm release:publish ${version}`;
+  return `Prepared ${version}; staged version files only.\nReview and commit your changes, then run: just publish`;
 }
 
 /** Publish an already committed version. Never creates a commit or force-pushes. */

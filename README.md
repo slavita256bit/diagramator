@@ -55,6 +55,23 @@ cargo run -p diagram-core --example analyze -- <src-dir>    # print IR JSON for 
 
 ### Releases
 
+Prepare a release with one of:
+
+```sh
+just release                            # patch: 0.4.6 → 0.4.7
+just release --major                    # 0.4.6 → 1.0.0
+just release --minor                    # 0.4.6 → 0.5.0
+just release --patch                    # 0.4.6 → 0.4.7
+just release --version 0.4.7            # choose a version explicitly
+```
+
+The current version is read from `package.json`. Commit any existing changes to
+the version files first; other uncommitted changes can remain. The command
+updates and stages the version files. Review and commit your changes in PyCharm
+with your preferred commit message, then run `just publish`. Publishing requires
+a clean working tree and pushes the current branch and annotated tag to `origin`.
+If the push fails, retry `just publish` after resolving the issue.
+
 Pushing a `v*` tag runs `.github/workflows/release.yml`: it builds installers for
 Linux/Windows/macOS (arm64 + x86_64) and leaves a draft GitHub Release. Doxygen
 and Typst are fetched per-platform by `scripts/fetch-sidecars.mjs` and bundled as

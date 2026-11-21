@@ -327,7 +327,8 @@ function routeOrthogonal(input: RouteInput): Pt[][] {
     return uniq([...sorted, ...sorted.slice(1).map((v, i) => (v + sorted[i]) / 2)]);
   };
   const xs = withMidpoints([...obstacles.flatMap((o) => [o.x, o.x + o.w]), ...allPorts.map((p) => p.stub.x)]);
-  const ys = withMidpoints([...obstacles.flatMap((o) => [o.y, o.y + o.h]), ...allPorts.map((p) => p.stub.y)]);
+  const ys = withMidpoints([...obstacles.flatMap((o) => [o.y, o.y + o.h]), ...allPorts.map((p) => p.stub.y),
+    ...sourcePorts.map((p, i) => (p.stub.y + targetPorts[i].stub.y) / 2)]);
   const nx = xs.length, ny = ys.length;
   const idx = (i: number, j: number) => j * nx + i;
   const blockedAt = (p: Pt) => obstacles.some((o) => strictlyInside(p, o));

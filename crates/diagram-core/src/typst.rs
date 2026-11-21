@@ -279,7 +279,7 @@ pub fn render(diagram: &Diagram, style: &StyleProfile) -> String {
   ),
 ))
 #let _corner(x, y, w, h, content) = place(dx: x, dy: y, block(
-  width: w, height: h, stroke: {dstroke}, inset: (x: 4pt, y: 2pt),
+  width: w, height: h, stroke: {dstroke}, fill: rgb({fill}), clip: true, inset: (x: 4pt, y: 2pt),
   align(center + horizon, text(size: {ssize}, content)),
 ))
 #let _note(x, y, w, h, content, img) = place(dx: x, dy: y, block(
@@ -333,10 +333,11 @@ pub fn render(diagram: &Diagram, style: &StyleProfile) -> String {
     let (mut min, mut max) = (P { x: f64::MAX, y: f64::MAX }, P { x: f64::MIN, y: f64::MIN });
     for (cls, r) in diagram.classes.iter().zip(&rects) {
         let loop_extra = if has_loop(&cls.id) { LOOP + s.arrow_size } else { 0.0 };
-        let corner_extra = if is_corner_template(cls) { CORNER_H } else { 0.0 };
+        let corner_extra = if is_corner_template(cls) { CORNER_H / 2.0 } else { 0.0 };
+        let corner_right = if is_corner_template(cls) { CORNER_W / 2.0 } else { 0.0 };
         min.x = min.x.min(r.x);
         min.y = min.y.min(r.y - loop_extra.max(corner_extra));
-        max.x = max.x.max(r.x + r.w + loop_extra);
+        max.x = max.x.max(r.x + r.w + loop_extra.max(corner_right));
         max.y = max.y.max(r.y + r.h);
     }
     for r in &note_rects {
@@ -429,8 +430,8 @@ pub fn render(diagram: &Diagram, style: &StyleProfile) -> String {
             let _ = writeln!(
                 out,
                 "    _corner({}, {}, {}, {}, {})",
-                pt(r.x + r.w - CORNER_W - origin.x),
-                pt(r.y - CORNER_H - origin.y),
+                pt(r.x + r.w - CORNER_W / 2.0 - origin.x),
+                pt(r.y - CORNER_H / 2.0 - origin.y),
                 pt(CORNER_W),
                 pt(CORNER_H),
                 lit(&cls.template_params.join(", ")),

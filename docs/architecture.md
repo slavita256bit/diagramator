@@ -62,10 +62,11 @@ Boxes are `place()`d at IR coordinates with IR width/height; rows have fixed hei
 (`lineHeight`), so the frontend's `measureClass()` sizes fit both renderers.
 Edges: same border clipping and notation as the editor, heads drawn as polygons; dash
 pattern comes from `edgeDashLength`/`edgeDashGap` (also used for note connectors and the
-GOST template corner box's border). Template corner boxes sit outside the class box's own
-bounding box — not counted in `measureClass`/React Flow layout, since it's a decorative
-overlay — so the Typst bbox computation adds a per-class margin term for them, the same way
-self-loop arrows already do.
+GOST template corner box's border). The 90×32 px template box is centered on the class's
+upper-right corner (45 px extend to the right, 16 px above), with an opaque profile fill
+and explicit profile font/text color so parameters such as `T` stay visible in dark themes.
+It is a decorative overlay, not counted in `measureClass`/React Flow layout; Typst includes
+its top and right overhangs in the export bounds, as it does for self-loop arrows.
 
 ## Project file
 `diagramator.json` in the analyzed source folder (`crates/diagram-core/src/project.rs`):
