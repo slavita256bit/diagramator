@@ -44,7 +44,7 @@ release *args:
             for (let i = index + 1; i < parts.length; i++) parts[i] = 0n;
             console.log(parts.join("."));
         }
-    ' "$selection")"
+    ' -- "$selection")"
     pnpm release:prepare "$version"
 
 # Push the manually committed version and its tag; CI creates a draft release.
