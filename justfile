@@ -6,6 +6,43 @@ alias run := dev
 dev:
     pnpm tauri dev
 
+# Build and install a local RPM; --full downloads fresh bundled tools.
+install *args:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    full=false
+    for arg in "$@"; do
+        case "$arg" in
+            --full) full=true ;;
+            *) echo "Usage: just install [--full]" >&2; exit 1 ;;
+        esac
+    done
+    if [[ "$(uname -s)" != Linux || "$(uname -m)" != x86_64 ]] || ! command -v rpm >/dev/null; then
+        echo "Local installation currently supports x86_64 Linux with RPM." >&2
+        exit 1
+    fi
+    version="$(node -p 'require("./package.json").version')"
+    if "$full"; then
+        node scripts/fetch-sidecars.mjs --triple x86_64-unknown-linux-gnu
+        config=src-tauri/binaries/sidecars.conf.json
+    else
+        for tool in doxygen typst; do
+            if [[ ! -x "/usr/bin/diagramator-$tool" ]] || [[ "$(rpm -qf --queryformat '%{NAME}' "/usr/bin/diagramator-$tool" 2>/dev/null)" != diagramator ]]; then
+                echo "Installed Diagramator $tool not found; use just install --full." >&2
+                exit 1
+            fi
+        done
+        mkdir -p target/local-install-sidecars
+        for tool in doxygen typst; do
+            cp "/usr/bin/diagramator-$tool" "target/local-install-sidecars/diagramator-$tool-x86_64-unknown-linux-gnu"
+        done
+        config='{"bundle":{"externalBin":["../target/local-install-sidecars/diagramator-doxygen","../target/local-install-sidecars/diagramator-typst"]}}'
+    fi
+    pnpm tauri build --bundles rpm --config "$config" --config '{"bundle":{"createUpdaterArtifacts":false}}'
+    package="target/release/bundle/rpm/Diagramator-${version}-1.x86_64.rpm"
+    [[ -f "$package" ]] || { echo "Built RPM not found: $package" >&2; exit 1; }
+    sudo rpm -U --replacepkgs "$package"
+
 # Prepare and stage the version files for a manual commit.
 release *args:
     #!/usr/bin/env bash

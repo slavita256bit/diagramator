@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { StyleProfile } from "@/shared/types";
+import type { RelationType, StyleProfile } from "@/shared/types";
 import { isAppThemeId, normalizeStyle, type AppThemeId } from "@/shared/config";
 
 
@@ -14,6 +14,8 @@ export interface SettingsState {
   style: StyleProfile;
   /** Most recent first. */
   recent: RecentProject[];
+  hiddenRelationTypes: string[];
+  selectedClassIds: string[];
 }
 
 const MAX_RECENT = 10;
@@ -46,12 +48,25 @@ const initialState: SettingsState = {
   })(),
   style: normalizeStyle(read<Partial<StyleProfile>>(STORAGE_KEY.style)),
   recent: (read<RecentProject[]>(STORAGE_KEY.recent) ?? []).filter((r) => typeof r?.path === "string"),
+  hiddenRelationTypes: [],
+  selectedClassIds: [],
 };
 
 export const settingsSlice = createSlice({
   name: "settings",
   initialState,
   reducers: {
+    hiddenRelationTypesSet(state, action: PayloadAction<string[]>) {
+      state.hiddenRelationTypes = action.payload;
+    },
+    relationTypeVisibilityToggled(state, action: PayloadAction<RelationType>) {
+      const index = state.hiddenRelationTypes.indexOf(action.payload);
+      if (index < 0) state.hiddenRelationTypes.push(action.payload);
+      else state.hiddenRelationTypes.splice(index, 1);
+    },
+    selectedClassesChanged(state, action: PayloadAction<string[]>) {
+      state.selectedClassIds = action.payload;
+    },
     themeSet(state, action: PayloadAction<AppThemeId>) {
       state.theme = action.payload;
     },
@@ -72,8 +87,10 @@ export const settingsSlice = createSlice({
     selectTheme: (s) => s.theme,
     selectStyle: (s) => s.style,
     selectRecent: (s) => s.recent,
+    selectHiddenRelationTypes: (s) => s.hiddenRelationTypes,
+    selectSelectedClassIds: (s) => s.selectedClassIds,
   },
 });
 
-export const { themeSet, styleSet, recentOpened, recentRemoved } = settingsSlice.actions;
-export const { selectTheme, selectStyle, selectRecent } = settingsSlice.selectors;
+export const { themeSet, styleSet, recentOpened, recentRemoved, relationTypeVisibilityToggled, hiddenRelationTypesSet, selectedClassesChanged } = settingsSlice.actions;
+export const { selectTheme, selectStyle, selectRecent, selectHiddenRelationTypes, selectSelectedClassIds } = settingsSlice.selectors;

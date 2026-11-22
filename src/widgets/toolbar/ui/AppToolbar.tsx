@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { AppBar, Box, IconButton, Toolbar, Tooltip, Typography } from "@mui/material";
+import { AppBar, Box, Checkbox, IconButton, ListItemText, Menu, MenuItem, Toolbar, Tooltip, Typography } from "@mui/material";
 import PaletteIcon from "@mui/icons-material/Palette";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import { BlockVisibilityButton } from "@/features/block-visibility";
 import { AddNoteButton } from "@/features/add-note";
 import { AppUpdateDialog } from "@/features/app-update";
@@ -12,10 +13,15 @@ import { AnalyzeButtons, RecentMenu } from "@/features/analyze-project";
 import { ToolStatusChips } from "@/features/tool-status";
 import { selectSource } from "@/entities/diagram";
 import { ThemeMenu } from "@/features/switch-theme";
-import { useAppSelector } from "@/shared/model/hooks";
+import { relationTypeVisibilityToggled, selectHiddenRelationTypes } from "@/entities/settings";
+import type { RelationType } from "@/shared/types";
+import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
 
 export function AppToolbar() {
   const source = useAppSelector(selectSource);
+  const dispatch = useAppDispatch();
+  const hiddenTypes = useAppSelector(selectHiddenRelationTypes);
+  const [relationsMenu, setRelationsMenu] = useState<HTMLElement | null>(null);
   const [styleOpen, setStyleOpen] = useState(false);
   return (
     <AppBar position="static" elevation={0}>
@@ -44,6 +50,20 @@ export function AppToolbar() {
           <AutoArrangeButton />
           <AddNoteButton />
           <BlockVisibilityButton />
+          <Tooltip title="Relationship visibility">
+            <IconButton color="inherit" aria-label="Relationship visibility" onClick={(e) => setRelationsMenu(e.currentTarget)}>
+              <AccountTreeIcon />
+            </IconButton>
+          </Tooltip>
+          <Menu anchorEl={relationsMenu} open={!!relationsMenu} onClose={() => setRelationsMenu(null)}>
+            {(["inheritance", "realization", "composition", "aggregation", "association", "dependency"] as RelationType[]).map((type) => (
+              <MenuItem key={type} onClick={() => dispatch(relationTypeVisibilityToggled(type))}>
+                <Checkbox checked={!hiddenTypes.includes(type)} />
+                <ListItemText primary={type[0].toUpperCase() + type.slice(1)}
+                  secondary={type === "realization" ? "Implements an interface · dashed" : type === "dependency" ? "Uses another class · dashed" : undefined} />
+              </MenuItem>
+            ))}
+          </Menu>
           <Tooltip title="Diagram style">
             <IconButton color="inherit" onClick={() => setStyleOpen(true)}>
               <PaletteIcon />

@@ -4,14 +4,14 @@ import type { AppThunk } from "@/shared/model/hooks";
 
 /** Write `diagramator.json` and regenerate the Typst file (if auto-export is on). */
 export const saveProject = (): AppThunk<Promise<void>> => async (dispatch, getState) => {
-  const { diagram, projectDir } = getState().diagram;
+  const { diagram, projectDir, exportPath } = getState().diagram;
   if (!diagram || !projectDir || !backend.available) return;
   dispatch(saveStatusChanged("saving"));
   try {
-    const style = getState().settings.style;
+    const { style, hiddenRelationTypes } = getState().settings;
     const routes = await computeRoutesAsync(diagram, style);
     const routed = { ...diagram, relations: diagram.relations.map((r, i) => ({ ...r, route: routes[i] })) };
-    await backend.saveProject(projectDir, routed, style);
+    await backend.saveProject(projectDir, routed, style, exportPath, hiddenRelationTypes);
     // An edit that landed while saving keeps the project "unsaved" for the next autosave.
     if (getState().diagram.saveStatus === "saving") dispatch(saveStatusChanged("saved"));
   } catch (e) {

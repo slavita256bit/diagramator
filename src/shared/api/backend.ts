@@ -14,8 +14,8 @@ export const backend = {
   },
 
   /** Writes `diagramator.json` (+ Typst file if auto-export is on); returns the Typst path. */
-  saveProject(path: string, diagram: Diagram, style: StyleProfile): Promise<string | null> {
-    return invoke<string | null>("save_project", { path, diagram, style });
+  saveProject(path: string, diagram: Diagram, style: StyleProfile, outputPath: string | null, hiddenRelationTypes: string[]): Promise<string | null> {
+    return invoke<string | null>("save_project", { path, diagram, style, outputPath, hiddenRelationTypes });
   },
 
   loadDoxygenXml(path: string): Promise<Diagram> {
@@ -44,8 +44,8 @@ export const backend = {
     return invoke("write_style", { path, style });
   },
 
-  exportTypst(path: string, diagram: Diagram, style: StyleProfile): Promise<void> {
-    return invoke("export_typst", { path, diagram, style });
+  exportTypst(path: string, diagram: Diagram, style: StyleProfile, hiddenRelationTypes: string[]): Promise<void> {
+    return invoke("export_typst", { path, diagram, style, hiddenRelationTypes });
   },
 
   /** Re-runs the layered auto-layout (same algorithm Doxygen analysis uses) on `diagram`. */

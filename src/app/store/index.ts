@@ -1,11 +1,11 @@
-import { combineSlices, configureStore } from "@reduxjs/toolkit";
-import { diagramSlice } from "@/entities/diagram";
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import { diagramReducer } from "@/entities/diagram";
 import { settingsSlice } from "@/entities/settings";
 import { autosave } from "./autosave";
 import { routing } from "./routing";
 import { persist } from "./persist";
 
-const rootReducer = combineSlices(diagramSlice, settingsSlice);
+const rootReducer = combineReducers({ diagram: diagramReducer, settings: settingsSlice.reducer });
 
 export const store = configureStore({
   reducer: rootReducer,

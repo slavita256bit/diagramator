@@ -1,5 +1,5 @@
 import { loadFailed, loadStarted, loadSucceeded, sizeDiagram } from "@/entities/diagram";
-import { recentOpened, styleSet } from "@/entities/settings";
+import { hiddenRelationTypesSet, recentOpened, styleSet } from "@/entities/settings";
 import { backend } from "@/shared/api";
 import type { AppThunk } from "@/shared/model/hooks";
 
@@ -11,7 +11,9 @@ export const openProject =
     try {
       const { diagram, project } = await backend.analyzeProject(dir);
       if (project?.style) dispatch(styleSet(project.style));
-      dispatch(loadSucceeded({ diagram: sizeDiagram(diagram, getState().settings.style), projectDir: dir }));
+      dispatch(hiddenRelationTypesSet(project?.hiddenRelationTypes ?? []));
+      dispatch(loadSucceeded({ diagram: sizeDiagram(diagram, getState().settings.style), projectDir: dir,
+        exportPath: project?.autoExport ? project.output : null }));
       dispatch(recentOpened(dir));
     } catch (e) {
       dispatch(loadFailed(String(e)));
@@ -34,6 +36,7 @@ export const analyzeProject = (): AppThunk<Promise<void>> => async (dispatch, ge
   if (!backend.available) {
     dispatch(loadStarted("sample (browser mode)"));
     const diagram = sizeDiagram(backend.sampleDiagram(), getState().settings.style);
+    dispatch(hiddenRelationTypesSet([]));
     dispatch(loadSucceeded({ diagram, projectDir: null }));
     return;
   }
@@ -48,6 +51,7 @@ export const openDoxygenXml = (): AppThunk<Promise<void>> => async (dispatch, ge
   dispatch(loadStarted(dir));
   try {
     const diagram = sizeDiagram(await backend.loadDoxygenXml(dir), getState().settings.style);
+    dispatch(hiddenRelationTypesSet([]));
     dispatch(loadSucceeded({ diagram, projectDir: null }));
   } catch (e) {
     dispatch(loadFailed(String(e)));

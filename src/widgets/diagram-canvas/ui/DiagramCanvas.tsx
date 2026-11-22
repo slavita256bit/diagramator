@@ -16,10 +16,12 @@ import "@xyflow/react/dist/style.css";
 import { Box, Typography } from "@mui/material";
 import MapIcon from "@mui/icons-material/Map";
 import {
-  classMoved,
+  classesHidden,
+  nodesMoved,
+  undo,
+  redo,
   computeRoutesAsync,
   FloatingEdge,
-  noteMoved,
   selectDiagram,
   styleVars,
   toFlowEdges,
@@ -33,7 +35,7 @@ import {
   type NoteFlowNode,
 } from "@/entities/diagram";
 import { APP_THEMES } from "@/shared/config";
-import { selectStyle, selectTheme } from "@/entities/settings";
+import { selectHiddenRelationTypes, selectStyle, selectTheme, selectedClassesChanged } from "@/entities/settings";
 import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
 
 const nodeTypes: NodeTypes = { umlClass: UmlClassNode, umlNote: UmlNoteNode };
@@ -43,20 +45,39 @@ export function DiagramCanvas() {
   const dispatch = useAppDispatch();
   const diagram = useAppSelector(selectDiagram);
   const style = useAppSelector(selectStyle);
+  const hiddenTypes = useAppSelector(selectHiddenRelationTypes);
   const canvasTheme = APP_THEMES[useAppSelector(selectTheme)];
   const vars = useMemo(() => styleVars(style), [style]);
   // MiniMap re-renders on every drag frame; off by default (costly in WebKitGTK).
   const [miniMap, setMiniMap] = useState(false);
   const onNodeDragStop = useCallback<OnNodeDrag<ClassFlowNode | NoteFlowNode>>(
-    (_, __, dragged) =>
-      dragged.forEach((n) => {
-        const action = n.type === "umlNote" ? noteMoved : classMoved;
-        dispatch(action({ id: n.id, x: n.position.x, y: n.position.y }));
-      }),
+    (_, __, dragged) => dispatch(nodesMoved(dragged.map((n) => ({
+      id: n.id, x: n.position.x, y: n.position.y, type: n.type === "umlNote" ? "umlNote" as const : "umlClass" as const,
+    })))),
     [dispatch],
   );
   const [nodes, setNodes, onNodesChange] = useNodesState<ClassFlowNode | NoteFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const selectedIds = nodes.filter((n) => n.selected && n.type === "umlClass").map((n) => n.id).sort().join("\u0000");
+  useEffect(() => {
+    dispatch(selectedClassesChanged(selectedIds ? selectedIds.split("\u0000") : []));
+  }, [dispatch, selectedIds]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select, [contenteditable='true'], [role='dialog']"))) return;
+      if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (!event.repeat) dispatch(event.shiftKey ? redo() : undo());
+      } else if (event.key === "Delete" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+        const ids = nodes.filter((node) => node.selected && node.type === "umlClass").map((node) => node.id);
+        if (ids.length) { event.preventDefault(); dispatch(classesHidden(ids)); }
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dispatch, nodes]);
 
   // `key` for <ReactFlow>: only the id set, so unrelated node edits don't remount the
   // whole canvas (losing zoom/pan/minimap state) on every drag-stop.
@@ -83,7 +104,9 @@ export function DiagramCanvas() {
     : "";
   useEffect(() => {
     if (!diagram) return;
-    setNodes([...toFlowNodes(diagram, style), ...toFlowNoteNodes(diagram)]);
+    setNodes((previous) => [...toFlowNodes(diagram, style), ...toFlowNoteNodes(diagram)].map((node) => ({
+      ...node, selected: previous.find((old) => old.id === node.id)?.selected,
+    })));
   }, [nodesSignature, style, setNodes]);
   // Edges follow the router's output (relations change only when routes are recomputed) and
   // note links (which don't need routing — a note connector is always a plain line).
@@ -95,7 +118,7 @@ export function DiagramCanvas() {
   useEffect(() => {
     if (!diagram) return;
     const updateEdges = (display: typeof diagram) => {
-      setEdges((previous) => [...toFlowEdges(display, style), ...toFlowNoteEdges(display, style)].map((edge) => ({
+      setEdges((previous) => [...toFlowEdges(display, style, hiddenTypes), ...toFlowNoteEdges(display, style)].map((edge) => ({
         ...edge, selected: previous.find((e) => e.id === edge.id)?.selected,
         data: { ...edge.data, live: !!liveMovement },
       })));
@@ -112,7 +135,7 @@ export function DiagramCanvas() {
       if (!controller.signal.aborted) console.error("Live routing failed", error);
     });
     return () => controller.abort();
-  }, [relations, noteLinks, visibility, style, setEdges, liveMovement]);
+  }, [relations, noteLinks, visibility, style, hiddenTypes, setEdges, liveMovement]);
 
   if (!diagram) {
     return (
@@ -140,6 +163,7 @@ export function DiagramCanvas() {
         edgeTypes={edgeTypes}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        deleteKeyCode={null}
         onNodeDragStop={onNodeDragStop}
         onlyRenderVisibleElements
         nodesConnectable={false}

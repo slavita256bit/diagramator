@@ -43,12 +43,13 @@ const EDGE_STYLES: Record<RelationType, EdgeStyle> = {
   dependency: { dashed: true, markerEnd: UML_MARKER.openArrow },
 };
 
-export function toFlowEdges(diagram: Diagram, style: StyleProfile): Edge[] {
+export function toFlowEdges(diagram: Diagram, style: StyleProfile, hiddenTypes: readonly string[] = []): Edge[] {
   const dash = `${style.edgeDashLength} ${style.edgeDashGap}`;
   const visible = new Set(diagram.classes.filter((c) => !c.hidden).map((c) => c.id));
   return diagram.relations.flatMap((rel: Relation, index) => {
     if (!visible.has(rel.source) || !visible.has(rel.target)) return [];
     const edgeStyle = EDGE_STYLES[rel.type];
+    if (hiddenTypes.includes(rel.type)) return [];
     return [{
       id: `${rel.source}->${rel.target}:${rel.type}`,
       source: rel.source,

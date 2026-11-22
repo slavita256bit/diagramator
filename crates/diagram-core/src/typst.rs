@@ -213,11 +213,25 @@ fn point(p: P, origin: P) -> String {
 }
 
 pub fn render(diagram: &Diagram, style: &StyleProfile) -> String {
+    render_with_hidden_types(diagram, style, &[])
+}
+
+/// Render only the relationship types enabled by the project's canvas filter.
+pub fn render_with_hidden_types(diagram: &Diagram, style: &StyleProfile, hidden_types: &[String]) -> String {
     // Filter before calculating bounds so hidden boxes cannot enlarge the export.
     let mut visible = diagram.clone();
     visible.classes.retain(|c| !c.hidden);
     visible.relations.retain(|r| {
-        visible.classes.iter().any(|c| c.id == r.source)
+        let kind = match r.kind {
+            RelationType::Inheritance => "inheritance",
+            RelationType::Realization => "realization",
+            RelationType::Composition => "composition",
+            RelationType::Aggregation => "aggregation",
+            RelationType::Association => "association",
+            RelationType::Dependency => "dependency",
+        };
+        !hidden_types.iter().any(|hidden| hidden == kind)
+            && visible.classes.iter().any(|c| c.id == r.source)
             && visible.classes.iter().any(|c| c.id == r.target)
     });
     let diagram = &visible;
@@ -598,6 +612,20 @@ mod tests {
                 ),
             }],
         }
+    }
+
+    #[test]
+    fn hidden_relation_types_match_export_without_those_relations() {
+        let diagram = sample();
+        let mut expected = diagram.clone();
+        expected.relations.retain(|r| !matches!(r.kind, RelationType::Composition | RelationType::Dependency));
+        let hidden = vec!["composition".to_owned(), "dependency".to_owned(), "unknown".to_owned()];
+        for (_, json) in PRESETS {
+            let style = StyleProfile::from_json(json).unwrap();
+            assert_eq!(render_with_hidden_types(&diagram, &style, &hidden), render(&expected, &style));
+        }
+        assert_eq!(diagram.relations.len(), 4, "export must not remove saved relationships");
+        assert_eq!(render_with_hidden_types(&diagram, &StyleProfile::default(), &[]), render(&diagram, &StyleProfile::default()));
     }
 
     #[test]

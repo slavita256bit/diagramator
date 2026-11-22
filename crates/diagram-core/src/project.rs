@@ -18,7 +18,7 @@ pub const PROJECT_VERSION: u32 = 2;
 #[serde(default, rename_all = "camelCase")]
 pub struct ProjectFile {
     pub version: u32,
-    /// Typst output, relative to the project folder.
+    /// Typst output, relative to the project folder or an absolute path chosen by the user.
     pub output: String,
     /// Regenerate `output` on every save.
     pub auto_export: bool,
@@ -29,6 +29,8 @@ pub struct ProjectFile {
     /// Which sections are collapsed, per class id.
     pub collapsed: BTreeMap<String, ClassCollapse>,
     pub hidden: BTreeMap<String, bool>,
+    /// Relationship types hidden on the canvas; unknown types are retained for newer versions.
+    pub hidden_relation_types: Vec<String>,
     /// Manual connection points, matched by relation identity after re-analysis.
     pub connections: Vec<SavedConnection>,
     /// Freestanding comment boxes; not id-matched against Doxygen output, copied through as-is.
@@ -62,6 +64,7 @@ impl Default for ProjectFile {
             positions: BTreeMap::new(),
             collapsed: BTreeMap::new(),
             hidden: BTreeMap::new(),
+            hidden_relation_types: Vec::new(),
             connections: Vec::new(),
             notes: Vec::new(),
         }
@@ -139,7 +142,7 @@ impl ProjectFile {
             if let Some(output_dir) = output_path.parent() {
                 crate::typst::write_note_attachments(output_dir, diagram)?;
             }
-            std::fs::write(output_path, crate::typst::render(diagram, style))?;
+            std::fs::write(output_path, crate::typst::render_with_hidden_types(diagram, style, &self.hidden_relation_types))?;
         }
         Ok(())
     }
@@ -167,6 +170,16 @@ mod tests {
             relations: vec![],
             notes: vec![],
         }
+    }
+
+    #[test]
+    fn relationship_visibility_is_backward_compatible_and_preserves_unknown_types() {
+        let old: ProjectFile = serde_json::from_str(r#"{"version":2}"#).unwrap();
+        assert!(old.hidden_relation_types.is_empty());
+        let saved: ProjectFile = serde_json::from_str(r#"{"hiddenRelationTypes":["dependency","future-type"]}"#).unwrap();
+        let encoded = serde_json::to_string(&saved).unwrap();
+        let restored: ProjectFile = serde_json::from_str(&encoded).unwrap();
+        assert_eq!(restored.hidden_relation_types, ["dependency", "future-type"]);
     }
 
     #[test]

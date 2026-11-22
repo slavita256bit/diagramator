@@ -53,6 +53,15 @@ cargo test -p diagram-core                                 # parser/IR tests (ru
 cargo run -p diagram-core --example analyze -- <src-dir>    # print IR JSON for a folder
 ```
 
+On x86_64 Linux with RPM (such as Fedora), `just install` builds and installs
+the local checkout over the existing Diagramator RPM, reusing its bundled
+Doxygen and Typst. Use `just install --full` to download and install the pinned
+release versions of both tools instead (also required for a first install).
+Installation asks for sudo access. The app retains its
+network update configuration; the updater offers releases newer than the local
+version, subject to a signed update being available. The RPM installer refuses
+to replace a newer installed version with an older checkout.
+
 ### Releases
 
 Prepare a release with one of:

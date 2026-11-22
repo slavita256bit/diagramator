@@ -35,10 +35,17 @@ pub async fn analyze_project(app: AppHandle, path: String) -> Result<OpenedProje
 /// Writes `diagramator.json` (positions + style) and, if enabled there, the Typst file.
 /// Returns the path of the written Typst file, if any.
 #[tauri::command]
-pub async fn save_project(path: String, diagram: Diagram, style: StyleProfile) -> Result<Option<String>, String> {
+pub async fn save_project(path: String, diagram: Diagram, style: StyleProfile, output_path: Option<String>, hidden_relation_types: Option<Vec<String>>) -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let dir = PathBuf::from(path);
         let mut project = ProjectFile::load(&dir)?.unwrap_or_default();
+        if let Some(hidden) = hidden_relation_types {
+            project.hidden_relation_types = hidden;
+        }
+        if let Some(output) = output_path {
+            project.output = output;
+            project.auto_export = true;
+        }
         project.save(&dir, &diagram, &style)?;
         Ok::<_, diagram_core::Error>(project.auto_export.then(|| dir.join(&project.output).display().to_string()))
     })
@@ -99,11 +106,11 @@ pub fn write_style(path: String, style: StyleProfile) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn export_typst(path: String, diagram: Diagram, style: StyleProfile) -> Result<(), String> {
+pub fn export_typst(path: String, diagram: Diagram, style: StyleProfile, hidden_relation_types: Option<Vec<String>>) -> Result<(), String> {
     if let Some(dir) = PathBuf::from(&path).parent() {
         diagram_core::typst::write_note_attachments(dir, &diagram).map_err(|e| format!("{path}: {e}"))?;
     }
-    std::fs::write(&path, diagram_core::typst::render(&diagram, &style)).map_err(|e| format!("{path}: {e}"))
+    std::fs::write(&path, diagram_core::typst::render_with_hidden_types(&diagram, &style, &hidden_relation_types.unwrap_or_default())).map_err(|e| format!("{path}: {e}"))
 }
 
 /// Re-runs the layered auto-layout (same algorithm a fresh Doxygen analysis uses) on an
