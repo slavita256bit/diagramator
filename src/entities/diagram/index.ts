@@ -1,6 +1,6 @@
 export {
   diagramSlice,
-  diagramReducer,
+  diagramEditLabels,
   loadStarted,
   loadSucceeded,
   exportPathChanged,
@@ -43,3 +43,4 @@ export { measureClass, formatMethodSignature, splitVisibility } from "./lib/meas
 export { sizeDiagram } from "./lib/sized";
 export { computeRoutes, computeRoutesAsync } from "./lib/computeRoutes";
 export { styleVars } from "./ui/UmlClassNode";
+export { routeEdges, segmentHitsRect, type Rect } from "./lib/routing";

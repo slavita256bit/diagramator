@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AppBar, Box, Checkbox, IconButton, ListItemText, Menu, MenuItem, Toolbar, Tooltip, Typography } from "@mui/material";
+import { AppBar, Box, Button, Checkbox, IconButton, ListItemText, Menu, MenuItem, Toolbar, Tooltip, Typography } from "@mui/material";
 import PaletteIcon from "@mui/icons-material/Palette";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import { BlockVisibilityButton } from "@/features/block-visibility";
@@ -17,7 +17,7 @@ import { relationTypeVisibilityToggled, selectHiddenRelationTypes } from "@/enti
 import type { RelationType } from "@/shared/types";
 import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
 
-export function AppToolbar() {
+export function AppToolbar({ onSwitchMode }: { onSwitchMode: () => void }) {
   const source = useAppSelector(selectSource);
   const dispatch = useAppDispatch();
   const hiddenTypes = useAppSelector(selectHiddenRelationTypes);
@@ -35,9 +35,9 @@ export function AppToolbar() {
           "& .MuiButton-root, & .MuiChip-root": { whiteSpace: "nowrap" },
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700, flexShrink: 0 }}>
+        <Button color="inherit" onClick={onSwitchMode} aria-label="Switch to block-scheme editor" sx={{ fontSize: "1.25rem", fontWeight: 700, textTransform: "none", flexShrink: 0 }}>
           Diagramator
-        </Typography>
+        </Button>
         <AnalyzeButtons />
         <RecentMenu />
         <SaveButton />

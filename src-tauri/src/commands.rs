@@ -1,10 +1,23 @@
 use std::path::PathBuf;
 
 use diagram_core::{Diagram, ProjectFile, StyleProfile};
+use diagram_core::flowchart_files;
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
 use crate::tools::{self, Tool, ToolStatus};
+
+#[tauri::command]
+pub fn read_flowchart(path: String) -> Result<flowchart_files::Revision, String> {
+    flowchart_files::read_pair(&PathBuf::from(&path)).map_err(|e| format!("{path}: {e}"))
+}
+
+#[tauri::command]
+pub async fn write_flowchart(app: AppHandle, path: String, contents: String, render_data: String, expected: flowchart_files::Revision) -> Result<flowchart_files::SavedFlowchart, String> {
+    let typst = tools::resolve(&app, Tool::Typst);
+    tauri::async_runtime::spawn_blocking(move || flowchart_files::save_pair(&typst, &PathBuf::from(path), contents, &render_data, expected))
+        .await.map_err(|e| e.to_string())?
+}
 
 #[derive(Serialize)]
 pub struct OpenedProject {
@@ -35,14 +48,17 @@ pub async fn analyze_project(app: AppHandle, path: String) -> Result<OpenedProje
 /// Writes `diagramator.json` (positions + style) and, if enabled there, the Typst file.
 /// Returns the path of the written Typst file, if any.
 #[tauri::command]
-pub async fn save_project(path: String, diagram: Diagram, style: StyleProfile, output_path: Option<String>, hidden_relation_types: Option<Vec<String>>) -> Result<Option<String>, String> {
+pub async fn save_project(path: String, diagram: Diagram, style: StyleProfile, output_path: Option<String>, hidden_relation_types: Option<Vec<String>>, auto_export: Option<bool>) -> Result<Option<String>, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let dir = PathBuf::from(path);
         let mut project = ProjectFile::load(&dir)?.unwrap_or_default();
         if let Some(hidden) = hidden_relation_types {
             project.hidden_relation_types = hidden;
         }
-        if let Some(output) = output_path {
+        if let Some(enabled) = auto_export {
+            project.output = output_path.unwrap_or_else(|| ProjectFile::default().output);
+            project.auto_export = enabled;
+        } else if let Some(output) = output_path {
             project.output = output;
             project.auto_export = true;
         }

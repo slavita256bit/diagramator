@@ -101,7 +101,7 @@ export const UmlNoteNode = memo(function UmlNoteNode({ data, selected }: NodePro
           onClick={(e) => e.stopPropagation()}
         />
       ) : (
-        <div className="uml-note-text" onDoubleClick={() => setEditing(true)}>
+        <div className="uml-note-text" onDoubleClick={() => { setText(note.text); setEditing(true); }}>
           {note.text || "Double-click to edit…"}
         </div>
       )}

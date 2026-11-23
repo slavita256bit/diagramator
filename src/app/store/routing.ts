@@ -7,7 +7,6 @@ import {
   nodesMoved,
   undo,
   redo,
-  measureClass,
   relationAnchorsChanged,
   computeRoutesAsync,
   diagramArranged,
@@ -23,12 +22,10 @@ export const routing = createListenerMiddleware();
 routing.startListening.withTypes<RootState, AppDispatch>()({
   matcher: isAnyOf(relationAnchorsChanged, classVisibilityToggled, classesHidden, loadSucceeded, classMoved, nodesMoved, classesResized, diagramArranged, styleSet, undo, redo),
   effect: async (action, api) => {
-    if ((undo.match(action) || redo.match(action)) && api.getState().diagram.diagram !== api.getOriginalState().diagram.diagram) {
-      const { diagram } = api.getState().diagram;
-      if (diagram) {
-        api.dispatch(classesResized(Object.fromEntries(diagram.classes.map((c) => [c.id, measureClass(c, api.getState().settings.style)]))));
-        return; // The resize listener schedules routing with the restored dimensions.
-      }
+    if (undo.match(action) || redo.match(action)) {
+      const before = api.getOriginalState();
+      const after = api.getState();
+      if (before.diagram.diagram === after.diagram.diagram && before.settings.style === after.settings.style) return;
     }
     // Coalesce bursts (multi-node drags dispatch one classMoved per node).
     api.cancelActiveListeners();

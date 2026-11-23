@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction, type UnknownAction } from "@reduxjs/toolkit";
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Diagram, Note, Point, RelationAnchors } from "@/shared/types";
 
 export type LoadStatus = "idle" | "loading" | "succeeded" | "failed";
@@ -13,9 +13,8 @@ export interface DiagramState {
   /** Folder that receives `diagramator.json`; null for diagrams loaded from Doxygen XML. */
   projectDir: string | null;
   exportPath: string | null;
+  autoExport: boolean;
   saveStatus: SaveStatus;
-  past: Diagram[];
-  future: Diagram[];
 }
 
 const initialState: DiagramState = {
@@ -25,9 +24,8 @@ const initialState: DiagramState = {
   error: null,
   projectDir: null,
   exportPath: null,
+  autoExport: true,
   saveStatus: "saved",
-  past: [],
-  future: [],
 };
 
 export const diagramSlice = createSlice({
@@ -39,15 +37,18 @@ export const diagramSlice = createSlice({
       state.error = null;
       state.source = action.payload;
     },
-    loadSucceeded(state, action: PayloadAction<{ diagram: Diagram; projectDir: string | null; exportPath?: string | null }>) {
+    loadSucceeded(state, action: PayloadAction<{ diagram: Diagram; projectDir: string | null; exportPath?: string | null; autoExport?: boolean }>) {
       state.status = "succeeded";
       state.diagram = action.payload.diagram;
       state.projectDir = action.payload.projectDir;
       state.exportPath = action.payload.exportPath ?? null;
+      state.autoExport = action.payload.autoExport ?? true;
       state.saveStatus = "saved";
     },
     exportPathChanged(state, action: PayloadAction<string>) {
+      if (state.exportPath === action.payload && state.autoExport) return;
       state.exportPath = action.payload;
+      state.autoExport = true;
       state.saveStatus = "unsaved";
     },
     /** Edge routes, index-aligned with `relations` (see `computeRoutes`). */
@@ -214,32 +215,20 @@ export const {
 } = diagramSlice.actions;
 export const { selectDiagram, selectSource, selectStatus, selectError, selectProjectDir, selectSaveStatus } = diagramSlice.selectors;
 
-const undoable = new Set<string>([
-  classMoved.type, nodesMoved.type, diagramArranged.type, sectionCollapseToggled.type,
-  classVisibilityToggled.type, classesHidden.type, relationAnchorsChanged.type,
-  noteAdded.type, noteMoved.type, noteResized.type, noteTextChanged.type,
-  noteImageSet.type, noteLinked.type, noteRemoved.type,
-]);
-const HISTORY_LIMIT = 50;
-
-/** Keep diagram edits in history; derived routes and style-driven sizes are not separate edits. */
-export function diagramReducer(state: DiagramState | undefined, action: UnknownAction): DiagramState {
-  const current = state ?? initialState;
-  if (loadSucceeded.match(action)) {
-    return { ...diagramSlice.reducer(current, action), past: [], future: [] };
-  }
-  if (undo.match(action) || redo.match(action)) {
-    const undoing = undo.match(action);
-    const from = undoing ? current.past : current.future;
-    if (!current.diagram || !from.length) return current;
-    const diagram = from[from.length - 1];
-    return { ...current, diagram, saveStatus: "unsaved",
-      past: undoing ? from.slice(0, -1) : [...current.past, current.diagram].slice(-HISTORY_LIMIT),
-      future: undoing ? [...current.future, current.diagram].slice(-HISTORY_LIMIT) : from.slice(0, -1) };
-  }
-  const next = diagramSlice.reducer(current, action);
-  if (undoable.has(action.type) && current.diagram && next.diagram !== current.diagram) {
-    return { ...next, past: [...current.past, current.diagram].slice(-HISTORY_LIMIT), future: [] };
-  }
-  return next;
-}
+export const diagramEditLabels = {
+  [classMoved.type]: "Move block",
+  [nodesMoved.type]: "Move selection",
+  [diagramArranged.type]: "Auto-arrange blocks",
+  [sectionCollapseToggled.type]: "Change section visibility",
+  [classVisibilityToggled.type]: "Change block visibility",
+  [classesHidden.type]: "Hide blocks",
+  [relationAnchorsChanged.type]: "Change connection",
+  [exportPathChanged.type]: "Change Typst export location",
+  [noteAdded.type]: "Add note",
+  [noteMoved.type]: "Move note",
+  [noteResized.type]: "Resize note",
+  [noteTextChanged.type]: "Edit note",
+  [noteImageSet.type]: "Change note image",
+  [noteLinked.type]: "Change note link",
+  [noteRemoved.type]: "Remove note",
+};

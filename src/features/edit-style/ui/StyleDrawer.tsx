@@ -70,7 +70,7 @@ export function StyleDrawer({ open, onClose }: { open: boolean; onClose: () => v
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}>
-      <Box sx={{ width: 320, p: 2 }}>
+      <Box data-editor-undo sx={{ width: 320, p: 2 }}>
         <Stack spacing={2}>
           <Typography variant="h6">Style</Typography>
           <TextField

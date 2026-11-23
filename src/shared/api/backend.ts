@@ -3,10 +3,20 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import type { Diagram, OpenedProject, StyleProfile, ToolStatus, ToolUpdate } from "@/shared/types";
 import { sampleDiagram } from "./sample";
 
+export type FlowchartRevision = { json: string | null; typst: string | null };
+
 /** Typed wrappers around the Rust commands in `src-tauri/src/commands.rs`. */
 export const backend = {
   /** True inside the Tauri shell; false when the UI runs in a plain browser (`pnpm dev`). */
   available: isTauri(),
+
+  readFlowchart(path: string): Promise<FlowchartRevision> {
+    return invoke("read_flowchart", { path });
+  },
+
+  writeFlowchart(path: string, contents: string, renderData: string, expected: FlowchartRevision): Promise<{ revision: FlowchartRevision; export_error: string | null }> {
+    return invoke("write_flowchart", { path, contents, renderData, expected });
+  },
 
   /** Runs Doxygen and restores positions/style from the folder's `diagramator.json`. */
   analyzeProject(path: string): Promise<OpenedProject> {
@@ -14,8 +24,8 @@ export const backend = {
   },
 
   /** Writes `diagramator.json` (+ Typst file if auto-export is on); returns the Typst path. */
-  saveProject(path: string, diagram: Diagram, style: StyleProfile, outputPath: string | null, hiddenRelationTypes: string[]): Promise<string | null> {
-    return invoke<string | null>("save_project", { path, diagram, style, outputPath, hiddenRelationTypes });
+  saveProject(path: string, diagram: Diagram, style: StyleProfile, outputPath: string | null, hiddenRelationTypes: string[], autoExport: boolean): Promise<string | null> {
+    return invoke<string | null>("save_project", { path, diagram, style, outputPath, hiddenRelationTypes, autoExport });
   },
 
   loadDoxygenXml(path: string): Promise<Diagram> {

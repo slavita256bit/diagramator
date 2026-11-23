@@ -10,7 +10,7 @@ import {
   type Edge,
   type EdgeTypes,
   type NodeTypes,
-  type OnNodeDrag,
+  type OnNodesChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Box, Typography } from "@mui/material";
@@ -41,7 +41,7 @@ import { useAppDispatch, useAppSelector } from "@/shared/model/hooks";
 const nodeTypes: NodeTypes = { umlClass: UmlClassNode, umlNote: UmlNoteNode };
 const edgeTypes: EdgeTypes = { floating: FloatingEdge };
 
-export function DiagramCanvas() {
+export function DiagramCanvas({ active = true }: { active?: boolean }) {
   const dispatch = useAppDispatch();
   const diagram = useAppSelector(selectDiagram);
   const style = useAppSelector(selectStyle);
@@ -50,13 +50,17 @@ export function DiagramCanvas() {
   const vars = useMemo(() => styleVars(style), [style]);
   // MiniMap re-renders on every drag frame; off by default (costly in WebKitGTK).
   const [miniMap, setMiniMap] = useState(false);
-  const onNodeDragStop = useCallback<OnNodeDrag<ClassFlowNode | NoteFlowNode>>(
-    (_, __, dragged) => dispatch(nodesMoved(dragged.map((n) => ({
-      id: n.id, x: n.position.x, y: n.position.y, type: n.type === "umlNote" ? "umlNote" as const : "umlClass" as const,
-    })))),
-    [dispatch],
-  );
   const [nodes, setNodes, onNodesChange] = useNodesState<ClassFlowNode | NoteFlowNode>([]);
+  const changeNodes = useCallback<OnNodesChange<ClassFlowNode | NoteFlowNode>>((changes) => {
+    onNodesChange(changes);
+    // React Flow reports both completed drags and keyboard nudges as position changes.
+    const moved = changes.flatMap((change) => {
+      if (change.type !== "position" || change.dragging !== false || !change.position) return [];
+      const node = nodes.find((n) => n.id === change.id);
+      return node ? [{ ...change.position, id: node.id, type: node.type === "umlNote" ? "umlNote" as const : "umlClass" as const }] : [];
+    });
+    if (moved.length) dispatch(nodesMoved(moved));
+  }, [dispatch, nodes, onNodesChange]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const selectedIds = nodes.filter((n) => n.selected && n.type === "umlClass").map((n) => n.id).sort().join("\u0000");
   useEffect(() => {
@@ -64,50 +68,42 @@ export function DiagramCanvas() {
   }, [dispatch, selectedIds]);
 
   useEffect(() => {
+    if (!active) return;
     const onKey = (event: KeyboardEvent) => {
       const target = event.target;
-      if (target instanceof HTMLElement && (target.isContentEditable || target.closest("input, textarea, select, [contenteditable='true'], [role='dialog']"))) return;
+      if (event.defaultPrevented || event.isComposing) return;
+      const element = target instanceof HTMLElement ? target : null;
+      const textEditing = element?.isContentEditable || element?.closest(
+        "textarea, input:not([type=checkbox]):not([type=radio]):not([type=color]):not([type=range])",
+      );
       if ((event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === "z") {
+        if (textEditing && !element?.closest("[data-editor-undo]")) return;
         event.preventDefault();
         if (!event.repeat) dispatch(event.shiftKey ? redo() : undo());
       } else if (event.key === "Delete" && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey) {
+        if (textEditing || element?.closest("input, select, [role='dialog'], [role='menu']")) return;
         const ids = nodes.filter((node) => node.selected && node.type === "umlClass").map((node) => node.id);
         if (ids.length) { event.preventDefault(); dispatch(classesHidden(ids)); }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dispatch, nodes]);
+  }, [active, dispatch, nodes]);
 
   // `key` for <ReactFlow>: only the id set, so unrelated node edits don't remount the
   // whole canvas (losing zoom/pan/minimap state) on every drag-stop.
   const diagramKey = diagram
     ? diagram.classes.map((c) => c.id).join("|") + "#" + diagram.notes.map((n) => n.id).join("|")
     : "";
-  // Separate, finer-grained signature for rebuilding the *nodes array*: must also catch
-  // position/size/collapse/note changes that don't touch the id set (auto-arrange, collapse
-  // toggle, note edits) — otherwise the box node never gets the new data and stays stale
-  // while edges (routed off the store, not off this array) redraw for the new positions.
-  // Live drags are excluded on purpose: `classMoved`/`noteMoved` only dispatch once, at drag
-  // stop, with the same value React Flow already shows, so this just harmlessly re-confirms it.
-  const nodesSignature = diagram
-    ? diagram.classes
-        .map(
-          (c) =>
-            `${c.id}:${c.position.x}:${c.position.y}:${c.position.width}:${c.position.height}:${c.attributesCollapsed}:${c.methodsCollapsed}:${c.hidden}`,
-        )
-        .join("|") +
-      "#" +
-      diagram.notes
-        .map((n) => `${n.id}:${n.position.x}:${n.position.y}:${n.position.width}:${n.position.height}:${n.linkedClass ?? ""}:${n.text}`)
-        .join("|")
-    : "";
+  // Route updates keep these arrays intact. Node edits, including restored images, replace them.
+  const classes = diagram?.classes;
+  const notes = diagram?.notes;
   useEffect(() => {
     if (!diagram) return;
     setNodes((previous) => [...toFlowNodes(diagram, style), ...toFlowNoteNodes(diagram)].map((node) => ({
       ...node, selected: previous.find((old) => old.id === node.id)?.selected,
     })));
-  }, [nodesSignature, style, setNodes]);
+  }, [classes, notes, style, setNodes]);
   // Edges follow the router's output (relations change only when routes are recomputed) and
   // note links (which don't need routing — a note connector is always a plain line).
   const relations = diagram?.relations;
@@ -161,10 +157,9 @@ export function DiagramCanvas() {
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
-        onNodesChange={onNodesChange}
+        onNodesChange={changeNodes}
         onEdgesChange={onEdgesChange}
         deleteKeyCode={null}
-        onNodeDragStop={onNodeDragStop}
         onlyRenderVisibleElements
         nodesConnectable={false}
         // Always light, regardless of the app's theme toggle: style-profile colors (GOST's

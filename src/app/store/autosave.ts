@@ -52,6 +52,8 @@ autosave.startListening.withTypes<RootState, AppDispatch>()({
     noteRemoved,
   ),
   effect: async (action, api) => {
+    if ((undo.match(action) || redo.match(action) || exportPathChanged.match(action))
+      && api.getOriginalState().diagram === api.getState().diagram) return;
     if (relationTypeVisibilityToggled.match(action) && api.getState().diagram.diagram) {
       api.dispatch(saveStatusChanged("unsaved"));
     }

@@ -29,6 +29,8 @@ pub fn run() {
             commands::export_typst,
             commands::auto_arrange,
             commands::save_project,
+            commands::read_flowchart,
+            commands::write_flowchart,
             commands::list_examples,
             commands::prepare_example,
         ])

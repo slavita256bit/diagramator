@@ -13,7 +13,7 @@ export const openProject =
       if (project?.style) dispatch(styleSet(project.style));
       dispatch(hiddenRelationTypesSet(project?.hiddenRelationTypes ?? []));
       dispatch(loadSucceeded({ diagram: sizeDiagram(diagram, getState().settings.style), projectDir: dir,
-        exportPath: project?.autoExport ? project.output : null }));
+        exportPath: project?.output, autoExport: project?.autoExport }));
       dispatch(recentOpened(dir));
     } catch (e) {
       dispatch(loadFailed(String(e)));

@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "canvas": { "width": 225, "height": 294, "textSize": 8 },
+  "nodes": [
+    { "id": "start", "kind": "terminal", "position": { "x": 55, "y": 10 }, "text": "Начало" },
+    { "id": "vars", "kind": "process", "position": { "x": 55, "y": 35 }, "text": "Вх.: cart\nПр.: item, product, stock,\nquantity, order\nВых.: status" },
+    { "id": "empty", "kind": "decision", "position": { "x": 55, "y": 71 }, "text": "Корзина cart\nпуста" },
+    { "id": "access", "kind": "predefined", "position": { "x": 55, "y": 99 }, "text": "ф. lock_data()\nСогласование доступа к данным" },
+    { "id": "first", "kind": "predefined", "position": { "x": 55, "y": 126 }, "text": "ф. first_item()\nПервая позиция item\nв корзине cart" },
+    { "id": "remaining", "kind": "decision", "position": { "x": 55, "y": 154 }, "text": "Позиция item\nсуществует" },
+    { "id": "stock", "kind": "predefined", "position": { "x": 55, "y": 182 }, "text": "ф. get_quantity()\nОстаток stock\nдля товара product" },
+    { "id": "enough", "kind": "decision", "position": { "x": 55, "y": 210 }, "text": "Остатка stock\nдостаточно" },
+    { "id": "next", "kind": "predefined", "position": { "x": 55, "y": 238 }, "text": "ф. next_item()\nСледующая позиция item\nв корзине cart" },
+    { "id": "missing", "kind": "input-output", "position": { "x": 113, "y": 210 }, "text": "Сообщение\nо нехватке товара" },
+    { "id": "create", "kind": "predefined", "position": { "x": 178, "y": 154 }, "text": "ф. make_order()\nЗаказ order\nиз корзины cart" },
+    { "id": "decrement", "kind": "predefined", "position": { "x": 178, "y": 182 }, "text": "ф. update_stock()\nУменьшение остатков\nтоваров из заказа order" },
+    { "id": "save", "kind": "predefined", "position": { "x": 178, "y": 210 }, "text": "ф. save_order()\nЗапись заказа order\nв бин. файл.\nСохранение остатков" },
+    { "id": "release", "kind": "predefined", "position": { "x": 178, "y": 255 }, "text": "ф. unlock_data()\nОсвобождение доступа к данным" },
+    { "id": "error", "kind": "input-output", "position": { "x": 113, "y": 71 }, "text": "Сообщение\nо пустой корзине" },
+    { "id": "finish", "kind": "terminal", "position": { "x": 178, "y": 284 }, "text": "Конец" }
+  ],
+  "routes": [
+    { "id": "r1", "points": [{"node":"start","side":"bottom"},{"node":"vars","side":"top"}], "arrow":true },
+    { "id": "r2", "points": [{"node":"vars","side":"bottom"},{"node":"empty","side":"top"}], "arrow":true },
+    { "id": "r3", "points": [{"node":"empty","side":"bottom"},{"node":"access","side":"top"}], "arrow":true },
+    { "id": "r4", "points": [{"node":"empty","side":"right"},{"node":"error","side":"left"}], "arrow":true },
+    { "id": "r5", "points": [{"node":"error","side":"right"},{"x":216,"y":71},{"x":216,"y":284},{"node":"finish","side":"right"}], "arrow":true },
+    { "id": "r6", "points": [{"node":"access","side":"bottom"},{"node":"first","side":"top"}], "arrow":true },
+    { "id": "r7", "points": [{"node":"first","side":"bottom"},{"node":"remaining","side":"top"}], "arrow":true },
+    { "id": "r8", "points": [{"node":"remaining","side":"bottom"},{"node":"stock","side":"top"}], "arrow":true },
+    { "id": "r9", "points": [{"node":"remaining","side":"right"},{"node":"create","side":"left"}], "arrow":true },
+    { "id": "r10", "points": [{"node":"stock","side":"bottom"},{"node":"enough","side":"top"}], "arrow":true },
+    { "id": "r11", "points": [{"node":"enough","side":"bottom"},{"node":"next","side":"top"}], "arrow":true },
+    { "id": "r12", "points": [{"node":"enough","side":"right"},{"node":"missing","side":"left"}], "arrow":true },
+    { "id": "r13", "points": [{"node":"next","side":"left"},{"x":23,"y":238},{"x":23,"y":140},{"x":55,"y":140}], "arrow":true },
+    { "id": "r14", "points": [{"node":"create","side":"bottom"},{"node":"decrement","side":"top"}], "arrow":true },
+    { "id": "r15", "points": [{"node":"decrement","side":"bottom"},{"node":"save","side":"top"}], "arrow":true },
+    { "id": "r16", "points": [{"node":"save","side":"bottom"},{"node":"release","side":"top"}], "arrow":true },
+    { "id": "r17", "points": [{"node":"missing","side":"bottom"},{"x":113,"y":255},{"node":"release","side":"left"}], "arrow":true },
+    { "id": "r18", "points": [{"node":"release","side":"bottom"},{"node":"finish","side":"top"}], "arrow":true }
+  ],
+  "labels": [
+    {"id":"l1","anchor":{"route":"r3","along":0},"position":{"x":8,"y":1},"width":12,"text":"Нет"},
+    {"id":"l2","anchor":{"route":"r4","along":0},"position":{"x":11,"y":-5},"width":12,"text":"Да"},
+    {"id":"l3","anchor":{"route":"r8","along":0},"position":{"x":8,"y":1},"width":12,"text":"Да"},
+    {"id":"l4","anchor":{"route":"r9","along":0},"position":{"x":11,"y":-5},"width":12,"text":"Нет"},
+    {"id":"l5","anchor":{"route":"r11","along":0},"position":{"x":8,"y":1},"width":12,"text":"Да"},
+    {"id":"l6","anchor":{"route":"r12","along":0},"position":{"x":11,"y":-5},"width":12,"text":"Нет"}
+  ],
+  "comments": [
+    {"id":"c1","node":"vars","side":"right","gap":8,"width":105,"height":36,"text":"Метод Buyer::place_order()\ncart – корзина покупателя, тип Cart&.\nitem – текущая позиция корзины cart, тип CartItem*.\nproduct – товар в позиции item, тип Product&.\nstock – актуальный остаток товара product, тип int.\nquantity – количество товара в позиции item, тип int.\nДля заказа требуется stock ≥ quantity.\norder – заказ, сформированный из позиций cart, тип Order.\nstatus – возвращаемое значение метода, тип bool."},
+    {"id":"c2","node":"access","side":"right","gap":8,"width":110,"height":20,"text":"Проверка и изменение остатков выполняются при согласованном доступе нескольких экземпляров."}
+  ]
+}

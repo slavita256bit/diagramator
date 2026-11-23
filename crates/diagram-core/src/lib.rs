@@ -4,6 +4,7 @@
 //! This crate has no Tauri dependency so it can be built and tested headless.
 
 pub mod doxygen;
+pub mod flowchart_files;
 pub mod ir;
 pub mod layout;
 pub mod project;
